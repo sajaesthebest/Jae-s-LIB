@@ -178,7 +178,7 @@ local function SetTheme()
 			for _, Object in pairs(Objects) do
 				local Prop = ReturnProperty(Object)
 				if Prop then
-					TweenService:Create(Object, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {
+					TweenService:Create(Object, TweenInfo.new(0.65, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {
 						[Prop] = Theme[Name]
 					}):Play()
 				end
@@ -534,6 +534,8 @@ function OrionLib:MakeWindow(WindowConfig)
 	WindowConfig.IntroIcon = WindowConfig.IntroIcon or "rbxassetid://8834748103"
 	OrionLib.Folder = WindowConfig.ConfigFolder
 	OrionLib.SaveCfg = WindowConfig.SaveConfig
+	WindowConfig.Background = WindowConfig.Background or nil
+	WindowConfig.BackgroundTransparency = WindowConfig.BackgroundTransparency or 0.4
 
 	if WindowConfig.SaveConfig and not isfolder(WindowConfig.ConfigFolder) then
 		makefolder(WindowConfig.ConfigFolder)
@@ -650,7 +652,7 @@ function OrionLib:MakeWindow(WindowConfig)
 		Position = UDim2.new(0, 0, 1, -1)
 	}), "Stroke")
 
-	local MainWindow = AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(255, 255, 255), 0, 8), {
+	local MainWindow = AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame"...
 		Parent = Orion,
 		Position = UDim2.new(0.5, -307, 0.5, -172),
 		Size = CurrentSize,
@@ -690,6 +692,18 @@ function OrionLib:MakeWindow(WindowConfig)
 
 	AddDraggingFunctionality(DragPoint, MainWindow)
 	AddResizeFunctionality(MainWindow, Vector2.new(480, 280))
+
+	if WindowConfig.Background then
+	local Background = SetProps(MakeElement("Image", WindowConfig.Background), {
+		Size = UDim2.new(1, 0, 1, 0),
+		Position = UDim2.new(0, 0, 0, 0),
+		BackgroundTransparency = 1,
+		ImageTransparency = WindowConfig.BackgroundTransparency,
+		ScaleType = Enum.ScaleType.Crop,
+		ZIndex = 0,
+		Parent = MainWindow
+	})
+end
 
 	AddConnection(CloseBtn.MouseButton1Up, function()
 		MainWindow.Visible = false
