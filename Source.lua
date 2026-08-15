@@ -1750,6 +1750,42 @@ function OrionLib:MakeWindow(WindowConfig)
 		return ElementFunction
 	end
 
+	OrionLib.MainWindow = MainWindow
+OrionLib.BackgroundImage = nil
+
+if WindowConfig.Background then
+	OrionLib.BackgroundImage = SetProps(MakeElement("Image", WindowConfig.Background), {
+		Size = UDim2.new(1, 0, 1, 0),
+		Position = UDim2.new(0, 0, 0, 0),
+		BackgroundTransparency = 1,
+		ImageTransparency = WindowConfig.BackgroundTransparency or 0.4,
+		ScaleType = Enum.ScaleType.Crop,
+		ZIndex = 0,
+		Parent = MainWindow
+	})
+end
+
+function OrionLib:SetBackground(ImageId, Transparency)
+	Transparency = Transparency or 0.4
+
+	if OrionLib.BackgroundImage then
+		OrionLib.BackgroundImage:Destroy()
+		OrionLib.BackgroundImage = nil
+	end
+
+	if ImageId and ImageId ~= "" then
+		OrionLib.BackgroundImage = SetProps(MakeElement("Image", ImageId), {
+			Size = UDim2.new(1, 0, 1, 0),
+			Position = UDim2.new(0, 0, 0, 0),
+			BackgroundTransparency = 1,
+			ImageTransparency = Transparency,
+			ScaleType = Enum.ScaleType.Crop,
+			ZIndex = 0,
+			Parent = OrionLib.MainWindow
+		})
+	end
+end
+
 	return TabFunction
 end
 
