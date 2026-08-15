@@ -153,6 +153,72 @@ local function AddDraggingFunctionality(DragPoint, Main)
 	end)
 end
 
+local function AddResizeFunctionality(Main, MinSize)
+	MinSize = MinSize or Vector2.new(400, 250)
+
+	local ResizeHandle = SetProps(MakeElement("ImageButton", "rbxassetid://7072719338"), {
+		Size = UDim2.new(0, 18, 0, 18),
+		Position = UDim2.new(1, -22, 1, -22),
+		AnchorPoint = Vector2.new(0, 0),
+		BackgroundTransparency = 1,
+		ImageColor3 = Color3.fromRGB(160, 160, 175),
+		ImageTransparency = 0.3,
+		ZIndex = 10,
+		Parent = Main
+	})
+
+	ResizeHandle.Image = "rbxassetid://6031094670"
+	local Resizing = false
+	local StartMouse, StartSize
+
+	ResizeHandle.MouseEnter:Connect(function()
+		TweenService:Create(ResizeHandle, TweenInfo.new(0.2), {
+			ImageTransparency = 0,
+			ImageColor3 = Color3.fromRGB(220, 220, 235)
+		}):Play()
+	end)
+
+	ResizeHandle.MouseLeave:Connect(function()
+		if not Resizing then
+			TweenService:Create(ResizeHandle, TweenInfo.new(0.2), {
+				ImageTransparency = 0.3,
+				ImageColor3 = Color3.fromRGB(160, 160, 175)
+			}):Play()
+		end
+	end)
+
+	ResizeHandle.InputBegan:Connect(function(Input)
+		if Input.UserInputType == Enum.UserInputType.MouseButton1 then
+			Resizing = true
+			StartMouse = Input.Position
+			StartSize = Main.AbsoluteSize
+
+			Input.Changed:Connect(function()
+				if Input.UserInputState == Enum.UserInputState.End then
+					Resizing = false
+					TweenService:Create(ResizeHandle, TweenInfo.new(0.2), {
+						ImageTransparency = 0.3,
+						ImageColor3 = Color3.fromRGB(160, 160, 175)
+					}):Play()
+				end
+			end)
+		end
+	end)
+
+	UserInputService.InputChanged:Connect(function(Input)
+		if Resizing and Input.UserInputType == Enum.UserInputType.MouseMovement then
+			local Delta = Input.Position - StartMouse
+			local NewX = math.max(MinSize.X, StartSize.X + Delta.X)
+			local NewY = math.max(MinSize.Y, StartSize.Y + Delta.Y)
+
+			Main.Size = UDim2.new(0, NewX, 0, NewY)
+		end
+	end)
+
+	return ResizeHandle
+end
+
+
 local function Create(Name, Properties, Children)
 	local Object = Instance.new(Name)
 	for i, v in next, Properties or {} do
@@ -639,45 +705,46 @@ function OrionLib:MakeWindow(WindowConfig)
 		Position = UDim2.new(0, 0, 1, -1)
 	}), "Stroke")
 
-	local MainWindow = AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(255, 255, 255), 0, 10), {
-		Parent = Orion,
-		Position = UDim2.new(0.5, -307, 0.5, -172),
-		Size = UDim2.new(0, 615, 0, 344),
-		ClipsDescendants = true
+local MainWindow = AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(255, 255, 255), 0, 10), {
+	Parent = Orion,
+	Position = UDim2.new(0.5, -307, 0.5, -172),
+	Size = UDim2.new(0, 615, 0, 344),
+	ClipsDescendants = true
+}), {
+	SetChildren(SetProps(MakeElement("TFrame"), {
+		Size = UDim2.new(1, 0, 0, 50),
+		Name = "TopBar"
 	}), {
-		SetChildren(SetProps(MakeElement("TFrame"), {
-			Size = UDim2.new(1, 0, 0, 50),
-			Name = "TopBar"
+		WindowName,
+		WindowTopBarLine,
+		AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(255, 255, 255), 0, 7), {
+			Size = UDim2.new(0, 70, 0, 30),
+			Position = UDim2.new(1, -90, 0, 10)
 		}), {
-			WindowName,
-			WindowTopBarLine,
-			AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(255, 255, 255), 0, 7), {
-				Size = UDim2.new(0, 70, 0, 30),
-				Position = UDim2.new(1, -90, 0, 10)
-			}), {
-				AddThemeObject(MakeElement("Stroke"), "Stroke"),
-				AddThemeObject(SetProps(MakeElement("Frame"), {
-					Size = UDim2.new(0, 1, 1, 0),
-					Position = UDim2.new(0.5, 0, 0, 0)
-				}), "Stroke"),
-				CloseBtn,
-				MinimizeBtn
-			}), "Second")
-		}),
-		DragPoint,
-		WindowStuff
-	}), "Main")
+			AddThemeObject(MakeElement("Stroke"), "Stroke"),
+			AddThemeObject(SetProps(MakeElement("Frame"), {
+				Size = UDim2.new(0, 1, 1, 0),
+				Position = UDim2.new(0.5, 0, 0, 0)
+			}), "Stroke"),
+			CloseBtn,
+			MinimizeBtn
+		}), "Second")
+	}),
+	DragPoint,
+	WindowStuff
+}), "Main")
 
-	if WindowConfig.ShowIcon then
-		WindowName.Position = UDim2.new(0, 50, 0, -24)
-		local WindowIcon = SetProps(MakeElement("Image", WindowConfig.Icon), {
-			Size = UDim2.new(0, 20, 0, 20),
-			Position = UDim2.new(0, 25, 0, 15)
-		})
-		WindowIcon.Parent = MainWindow.TopBar
-	end
+if WindowConfig.ShowIcon then
+	WindowName.Position = UDim2.new(0, 50, 0, -24)
+	local WindowIcon = SetProps(MakeElement("Image", WindowConfig.Icon), {
+		Size = UDim2.new(0, 20, 0, 20),
+		Position = UDim2.new(0, 25, 0, 15)
+	})
+	WindowIcon.Parent = MainWindow.TopBar
+end
 
-	AddDraggingFunctionality(DragPoint, MainWindow)
+AddDraggingFunctionality(DragPoint, MainWindow)
+AddResizeFunctionality(MainWindow, Vector2.new(480, 280))
 
 	AddConnection(CloseBtn.MouseButton1Up, function()
 		MainWindow.Visible = false
