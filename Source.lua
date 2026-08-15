@@ -693,17 +693,17 @@ function OrionLib:MakeWindow(WindowConfig)
 	AddDraggingFunctionality(DragPoint, MainWindow)
 	AddResizeFunctionality(MainWindow, Vector2.new(480, 280))
 
-	if WindowConfig.Background then
-	local Background = SetProps(MakeElement("Image", WindowConfig.Background), {
-		Size = UDim2.new(1, 0, 1, 0),
-		Position = UDim2.new(0, 0, 0, 0),
-		BackgroundTransparency = 1,
-		ImageTransparency = WindowConfig.BackgroundTransparency,
-		ScaleType = Enum.ScaleType.Crop,
-		ZIndex = 0,
-		Parent = MainWindow
-	})
-end
+		if WindowConfig.Background then
+		SetProps(MakeElement("Image", WindowConfig.Background), {
+			Size = UDim2.new(1, 0, 1, 0),
+			Position = UDim2.new(0, 0, 0, 0),
+			BackgroundTransparency = 1,
+			ImageTransparency = WindowConfig.BackgroundTransparency,
+			ScaleType = Enum.ScaleType.Crop,
+			ZIndex = 0,
+			Parent = MainWindow
+		})
+	end
 
 	AddConnection(CloseBtn.MouseButton1Up, function()
 		MainWindow.Visible = false
