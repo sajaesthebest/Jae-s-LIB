@@ -10,15 +10,15 @@ local OrionLib = {
 	ThemeObjects = {},
 	Connections = {},
 	Flags = {},
-	Themes = {
 		Default = {
-  			  Main = Color3.fromRGB(15, 15, 15),
-  			  Second = Color3.fromRGB(20, 20, 20),
-  			  Stroke = Color3.fromRGB(38, 38, 38),
-  			  Divider = Color3.fromRGB(32, 32, 32),
-  			  Text = Color3.fromRGB(235, 235, 235),
-  			  TextDark = Color3.fromRGB(140, 140, 140)
-		},
+			Main = Color3.fromRGB(15, 15, 15),
+			Second = Color3.fromRGB(20, 20, 20),
+			Stroke = Color3.fromRGB(38, 38, 38),
+			Divider = Color3.fromRGB(32, 32, 32),
+			Text = Color3.fromRGB(235, 235, 235),
+			TextDark = Color3.fromRGB(140, 140, 140),
+			Accent = Color3.fromRGB(88, 101, 242)
+},
 		Dark = {
 			Main = Color3.fromRGB(12, 12, 14),
 			Second = Color3.fromRGB(20, 20, 24),
@@ -246,6 +246,8 @@ local function SetProps(Element, Props)
 	end
 	return Element
 end
+
+AddResizeFunctionality(MainWindow, Vector2.new(480, 280))
 
 local function SetChildren(Element, Children)
 	for _, Child in next, Children do
@@ -744,7 +746,7 @@ if WindowConfig.ShowIcon then
 end
 
 AddDraggingFunctionality(DragPoint, MainWindow)
-AddResizeFunctionality(MainWindow, Vector2.new(480, 280))
+
 
 	AddConnection(CloseBtn.MouseButton1Up, function()
 		MainWindow.Visible = false
