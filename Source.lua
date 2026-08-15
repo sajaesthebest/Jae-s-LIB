@@ -652,34 +652,34 @@ function OrionLib:MakeWindow(WindowConfig)
 		Position = UDim2.new(0, 0, 1, -1)
 	}), "Stroke")
 
-	local MainWindow = AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame"...
-		Parent = Orion,
-		Position = UDim2.new(0.5, -307, 0.5, -172),
-		Size = CurrentSize,
-		ClipsDescendants = true
+	local MainWindow = AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(255, 255, 255), 0, 8), {
+	Parent = Orion,
+	Position = UDim2.new(0.5, -307, 0.5, -172),
+	Size = CurrentSize,
+	ClipsDescendants = true
+}), {
+	SetChildren(SetProps(MakeElement("TFrame"), {
+		Size = UDim2.new(1, 0, 0, 48),
+		Name = "TopBar"
 	}), {
-		SetChildren(SetProps(MakeElement("TFrame"), {
-			Size = UDim2.new(1, 0, 0, 48),
-			Name = "TopBar"
+		WindowName,
+		WindowTopBarLine,
+		AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(255, 255, 255), 0, 6), {
+			Size = UDim2.new(0, 64, 0, 28),
+			Position = UDim2.new(1, -82, 0, 10)
 		}), {
-			WindowName,
-			WindowTopBarLine,
-			AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(255, 255, 255), 0, 6), {
-				Size = UDim2.new(0, 64, 0, 28),
-				Position = UDim2.new(1, -82, 0, 10)
-			}), {
-				AddThemeObject(MakeElement("Stroke"), "Stroke"),
-				AddThemeObject(SetProps(MakeElement("Frame"), {
-					Size = UDim2.new(0, 1, 1, 0),
-					Position = UDim2.new(0.5, 0, 0, 0)
-				}), "Stroke"),
-				CloseBtn,
-				MinimizeBtn
-			}), "Second")
-		}),
-		DragPoint,
-		WindowStuff
-	}), "Main")
+			AddThemeObject(MakeElement("Stroke"), "Stroke"),
+			AddThemeObject(SetProps(MakeElement("Frame"), {
+				Size = UDim2.new(0, 1, 1, 0),
+				Position = UDim2.new(0.5, 0, 0, 0)
+			}), "Stroke"),
+			CloseBtn,
+			MinimizeBtn
+		}), "Second")
+	}),
+	DragPoint,
+	WindowStuff
+}), "Main")
 
 	if WindowConfig.ShowIcon then
 		WindowName.Position = UDim2.new(0, 48, 0, -22)
