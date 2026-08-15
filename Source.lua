@@ -10,47 +10,48 @@ local OrionLib = {
 	ThemeObjects = {},
 	Connections = {},
 	Flags = {},
+	Themes = {
 		Default = {
-			Main = Color3.fromRGB(15, 15, 15),
-			Second = Color3.fromRGB(20, 20, 20),
-			Stroke = Color3.fromRGB(38, 38, 38),
-			Divider = Color3.fromRGB(32, 32, 32),
-			Text = Color3.fromRGB(235, 235, 235),
-			TextDark = Color3.fromRGB(140, 140, 140),
+			Main = Color3.fromRGB(16, 16, 20),
+			Second = Color3.fromRGB(22, 22, 28),
+			Stroke = Color3.fromRGB(40, 40, 50),
+			Divider = Color3.fromRGB(30, 30, 38),
+			Text = Color3.fromRGB(240, 240, 245),
+			TextDark = Color3.fromRGB(130, 130, 145),
 			Accent = Color3.fromRGB(88, 101, 242)
-},
+		},
 		Dark = {
 			Main = Color3.fromRGB(12, 12, 14),
-			Second = Color3.fromRGB(20, 20, 24),
-			Stroke = Color3.fromRGB(38, 38, 46),
-			Divider = Color3.fromRGB(32, 32, 38),
+			Second = Color3.fromRGB(18, 18, 22),
+			Stroke = Color3.fromRGB(36, 36, 44),
+			Divider = Color3.fromRGB(28, 28, 34),
 			Text = Color3.fromRGB(235, 235, 240),
 			TextDark = Color3.fromRGB(120, 120, 135),
 			Accent = Color3.fromRGB(100, 110, 255)
 		},
 		Midnight = {
 			Main = Color3.fromRGB(10, 12, 20),
-			Second = Color3.fromRGB(16, 18, 28),
-			Stroke = Color3.fromRGB(30, 34, 50),
-			Divider = Color3.fromRGB(26, 30, 44),
+			Second = Color3.fromRGB(14, 16, 26),
+			Stroke = Color3.fromRGB(28, 32, 48),
+			Divider = Color3.fromRGB(22, 26, 40),
 			Text = Color3.fromRGB(230, 235, 250),
 			TextDark = Color3.fromRGB(110, 120, 150),
 			Accent = Color3.fromRGB(70, 130, 255)
 		},
 		Purple = {
-			Main = Color3.fromRGB(18, 14, 24),
-			Second = Color3.fromRGB(26, 20, 34),
-			Stroke = Color3.fromRGB(48, 38, 60),
-			Divider = Color3.fromRGB(40, 32, 52),
+			Main = Color3.fromRGB(16, 12, 22),
+			Second = Color3.fromRGB(22, 16, 30),
+			Stroke = Color3.fromRGB(44, 34, 56),
+			Divider = Color3.fromRGB(36, 28, 46),
 			Text = Color3.fromRGB(240, 235, 250),
 			TextDark = Color3.fromRGB(140, 125, 160),
 			Accent = Color3.fromRGB(160, 100, 255)
 		},
 		Green = {
 			Main = Color3.fromRGB(12, 16, 14),
-			Second = Color3.fromRGB(18, 24, 20),
-			Stroke = Color3.fromRGB(34, 48, 38),
-			Divider = Color3.fromRGB(28, 40, 32),
+			Second = Color3.fromRGB(16, 22, 18),
+			Stroke = Color3.fromRGB(32, 44, 36),
+			Divider = Color3.fromRGB(26, 36, 30),
 			Text = Color3.fromRGB(235, 245, 240),
 			TextDark = Color3.fromRGB(120, 145, 130),
 			Accent = Color3.fromRGB(70, 200, 120)
@@ -62,14 +63,9 @@ local OrionLib = {
 }
 
 local Icons = {}
-
-local Success, Response = pcall(function()
+pcall(function()
 	Icons = HttpService:JSONDecode(game:HttpGetAsync("https://raw.githubusercontent.com/evoincorp/lucideblox/master/src/modules/util/icons.json")).icons
 end)
-
-if not Success then
-	warn("Orion Library - Failed to load Feather Icons. Error code: " .. tostring(Response))
-end
 
 local function GetIcon(IconName)
 	return Icons[IconName]
@@ -84,147 +80,36 @@ else
 	Orion.Parent = gethui and gethui() or game.CoreGui
 end
 
-if gethui then
-	for _, Interface in ipairs(gethui():GetChildren()) do
-		if Interface.Name == Orion.Name and Interface ~= Orion then
-			Interface:Destroy()
-		end
-	end
-else
-	for _, Interface in ipairs(game.CoreGui:GetChildren()) do
-		if Interface.Name == Orion.Name and Interface ~= Orion then
-			Interface:Destroy()
-		end
+for _, Interface in ipairs((gethui and gethui() or game.CoreGui):GetChildren()) do
+	if Interface.Name == Orion.Name and Interface ~= Orion then
+		Interface:Destroy()
 	end
 end
 
 function OrionLib:IsRunning()
-	if gethui then
-		return Orion.Parent == gethui()
-	else
-		return Orion.Parent == game:GetService("CoreGui")
-	end
+	return Orion.Parent ~= nil
 end
 
 local function AddConnection(Signal, Function)
-	if not OrionLib:IsRunning() then
-		return
-	end
-	local SignalConnect = Signal:Connect(Function)
-	table.insert(OrionLib.Connections, SignalConnect)
-	return SignalConnect
+	if not OrionLib:IsRunning() then return end
+	local Conn = Signal:Connect(Function)
+	table.insert(OrionLib.Connections, Conn)
+	return Conn
 end
 
 task.spawn(function()
-	while OrionLib:IsRunning() do
-		task.wait()
-	end
-	for _, Connection in next, OrionLib.Connections do
-		Connection:Disconnect()
+	while OrionLib:IsRunning() do task.wait(1) end
+	for _, Conn in next, OrionLib.Connections do
+		Conn:Disconnect()
 	end
 end)
-
-local function AddDraggingFunctionality(DragPoint, Main)
-	local Dragging, DragInput, MousePos, FramePos
-	DragPoint.InputBegan:Connect(function(Input)
-		if Input.UserInputType == Enum.UserInputType.MouseButton1 then
-			Dragging = true
-			MousePos = Input.Position
-			FramePos = Main.Position
-			Input.Changed:Connect(function()
-				if Input.UserInputState == Enum.UserInputState.End then
-					Dragging = false
-				end
-			end)
-		end
-	end)
-	DragPoint.InputChanged:Connect(function(Input)
-		if Input.UserInputType == Enum.UserInputType.MouseMovement then
-			DragInput = Input
-		end
-	end)
-	UserInputService.InputChanged:Connect(function(Input)
-		if Input == DragInput and Dragging then
-			local Delta = Input.Position - MousePos
-			TweenService:Create(Main, TweenInfo.new(0.4, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-				Position = UDim2.new(FramePos.X.Scale, FramePos.X.Offset + Delta.X, FramePos.Y.Scale, FramePos.Y.Offset + Delta.Y)
-			}):Play()
-		end
-	end)
-end
-
-local function AddResizeFunctionality(Main, MinSize)
-	MinSize = MinSize or Vector2.new(400, 250)
-
-	local ResizeHandle = SetProps(MakeElement("ImageButton", "rbxassetid://7072719338"), {
-		Size = UDim2.new(0, 18, 0, 18),
-		Position = UDim2.new(1, -22, 1, -22),
-		AnchorPoint = Vector2.new(0, 0),
-		BackgroundTransparency = 1,
-		ImageColor3 = Color3.fromRGB(160, 160, 175),
-		ImageTransparency = 0.3,
-		ZIndex = 10,
-		Parent = Main
-	})
-
-	ResizeHandle.Image = "rbxassetid://6031094670"
-	local Resizing = false
-	local StartMouse, StartSize
-
-	ResizeHandle.MouseEnter:Connect(function()
-		TweenService:Create(ResizeHandle, TweenInfo.new(0.2), {
-			ImageTransparency = 0,
-			ImageColor3 = Color3.fromRGB(220, 220, 235)
-		}):Play()
-	end)
-
-	ResizeHandle.MouseLeave:Connect(function()
-		if not Resizing then
-			TweenService:Create(ResizeHandle, TweenInfo.new(0.2), {
-				ImageTransparency = 0.3,
-				ImageColor3 = Color3.fromRGB(160, 160, 175)
-			}):Play()
-		end
-	end)
-
-	ResizeHandle.InputBegan:Connect(function(Input)
-		if Input.UserInputType == Enum.UserInputType.MouseButton1 then
-			Resizing = true
-			StartMouse = Input.Position
-			StartSize = Main.AbsoluteSize
-
-			Input.Changed:Connect(function()
-				if Input.UserInputState == Enum.UserInputState.End then
-					Resizing = false
-					TweenService:Create(ResizeHandle, TweenInfo.new(0.2), {
-						ImageTransparency = 0.3,
-						ImageColor3 = Color3.fromRGB(160, 160, 175)
-					}):Play()
-				end
-			end)
-		end
-	end)
-
-	UserInputService.InputChanged:Connect(function(Input)
-		if Resizing and Input.UserInputType == Enum.UserInputType.MouseMovement then
-			local Delta = Input.Position - StartMouse
-			local NewX = math.max(MinSize.X, StartSize.X + Delta.X)
-			local NewY = math.max(MinSize.Y, StartSize.Y + Delta.Y)
-
-			Main.Size = UDim2.new(0, NewX, 0, NewY)
-		end
-	end)
-
-	return ResizeHandle
-end
-
 
 local function Create(Name, Properties, Children)
 	local Object = Instance.new(Name)
 	for i, v in next, Properties or {} do
 		Object[i] = v
 	end
-	for i, v in next, Children or {} do
+	for _, v in next, Children or {} do
 		v.Parent = Object
 	end
 	return Object
@@ -247,8 +132,6 @@ local function SetProps(Element, Props)
 	return Element
 end
 
-AddResizeFunctionality(MainWindow, Vector2.new(480, 280))
-
 local function SetChildren(Element, Children)
 	for _, Child in next, Children do
 		Child.Parent = Element
@@ -258,9 +141,7 @@ end
 
 local function Round(Number, Factor)
 	local Result = math.floor(Number / Factor + (math.sign(Number) * 0.5)) * Factor
-	if Result < 0 then
-		Result = Result + Factor
-	end
+	if Result < 0 then Result = Result + Factor end
 	return Result
 end
 
@@ -297,7 +178,7 @@ local function SetTheme()
 			for _, Object in pairs(Objects) do
 				local Prop = ReturnProperty(Object)
 				if Prop then
-					TweenService:Create(Object, TweenInfo.new(0.35, Enum.EasingStyle.Quint), {
+					TweenService:Create(Object, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {
 						[Prop] = Theme[Name]
 					}):Play()
 				end
@@ -349,17 +230,11 @@ local function LoadCfg(Config)
 end
 
 local function SaveCfg(Name)
-	if not OrionLib.SaveCfg then
-		return
-	end
+	if not OrionLib.SaveCfg then return end
 	local Data = {}
 	for i, v in pairs(OrionLib.Flags) do
 		if v.Save then
-			if v.Type == "Colorpicker" then
-				Data[i] = PackColor(v.Value)
-			else
-				Data[i] = v.Value
-			end
+			Data[i] = v.Type == "Colorpicker" and PackColor(v.Value) or v.Value
 		end
 	end
 	writefile(OrionLib.Folder .. "/" .. Name .. ".txt", HttpService:JSONEncode(Data))
@@ -370,17 +245,13 @@ local BlacklistedKeys = {Enum.KeyCode.Unknown, Enum.KeyCode.W, Enum.KeyCode.A, E
 
 local function CheckKey(Table, Key)
 	for _, v in next, Table do
-		if v == Key then
-			return true
-		end
+		if v == Key then return true end
 	end
 	return false
 end
 
 CreateElement("Corner", function(Scale, Offset)
-	return Create("UICorner", {
-		CornerRadius = UDim.new(Scale or 0, Offset or 10)
-	})
+	return Create("UICorner", {CornerRadius = UDim.new(Scale or 0, Offset or 8)})
 end)
 
 CreateElement("Stroke", function(Color, Thickness)
@@ -407,9 +278,7 @@ CreateElement("Padding", function(Bottom, Left, Right, Top)
 end)
 
 CreateElement("TFrame", function()
-	return Create("Frame", {
-		BackgroundTransparency = 1
-	})
+	return Create("Frame", {BackgroundTransparency = 1})
 end)
 
 CreateElement("Frame", function(Color)
@@ -424,9 +293,7 @@ CreateElement("RoundFrame", function(Color, Scale, Offset)
 		BackgroundColor3 = Color or Color3.fromRGB(255, 255, 255),
 		BorderSizePixel = 0
 	}, {
-		Create("UICorner", {
-			CornerRadius = UDim.new(Scale or 0, Offset or 10)
-		})
+		Create("UICorner", {CornerRadius = UDim.new(Scale or 0, Offset or 8)})
 	})
 end)
 
@@ -453,30 +320,21 @@ CreateElement("ScrollFrame", function(Color, Width)
 end)
 
 CreateElement("Image", function(ImageID)
-	local ImageNew = Create("ImageLabel", {
+	local Img = Create("ImageLabel", {
 		Image = ImageID,
 		BackgroundTransparency = 1
 	})
 	local Icon = GetIcon(ImageID)
-	if Icon then
-		ImageNew.Image = Icon
-	end
-	return ImageNew
-end)
-
-CreateElement("ImageButton", function(ImageID)
-	return Create("ImageButton", {
-		Image = ImageID,
-		BackgroundTransparency = 1
-	})
+	if Icon then Img.Image = Icon end
+	return Img
 end)
 
 CreateElement("Label", function(Text, TextSize, Transparency)
 	return Create("TextLabel", {
 		Text = Text or "",
-		TextColor3 = Color3.fromRGB(240, 240, 240),
+		TextColor3 = Color3.fromRGB(240, 240, 245),
 		TextTransparency = Transparency or 0,
-		TextSize = TextSize or 15,
+		TextSize = TextSize or 14,
 		Font = Enum.Font.Gotham,
 		RichText = true,
 		BackgroundTransparency = 1,
@@ -484,12 +342,100 @@ CreateElement("Label", function(Text, TextSize, Transparency)
 	})
 end)
 
+local function AddDraggingFunctionality(DragPoint, Main)
+	local Dragging, DragInput, MousePos, FramePos
+	DragPoint.InputBegan:Connect(function(Input)
+		if Input.UserInputType == Enum.UserInputType.MouseButton1 then
+			Dragging = true
+			MousePos = Input.Position
+			FramePos = Main.Position
+			Input.Changed:Connect(function()
+				if Input.UserInputState == Enum.UserInputState.End then
+					Dragging = false
+				end
+			end)
+		end
+	end)
+	DragPoint.InputChanged:Connect(function(Input)
+		if Input.UserInputType == Enum.UserInputType.MouseMovement then
+			DragInput = Input
+		end
+	end)
+	UserInputService.InputChanged:Connect(function(Input)
+		if Input == DragInput and Dragging then
+			local Delta = Input.Position - MousePos
+			TweenService:Create(Main, TweenInfo.new(0.35, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+				Position = UDim2.new(FramePos.X.Scale, FramePos.X.Offset + Delta.X, FramePos.Y.Scale, FramePos.Y.Offset + Delta.Y)
+			}):Play()
+		end
+	end)
+end
+
+local function AddResizeFunctionality(Main, MinSize)
+	MinSize = MinSize or Vector2.new(480, 280)
+
+	local ResizeHandle = SetProps(MakeElement("Image", "rbxassetid://6031094670"), {
+		Size = UDim2.new(0, 16, 0, 16),
+		Position = UDim2.new(1, -20, 1, -20),
+		BackgroundTransparency = 1,
+		ImageColor3 = Color3.fromRGB(160, 160, 175),
+		ImageTransparency = 0.4,
+		ZIndex = 15,
+		Parent = Main
+	})
+
+	local Resizing = false
+	local StartMouse, StartSize
+
+	ResizeHandle.MouseEnter:Connect(function()
+		TweenService:Create(ResizeHandle, TweenInfo.new(0.2), {
+			ImageTransparency = 0,
+			ImageColor3 = Color3.fromRGB(230, 230, 240)
+		}):Play()
+	end)
+
+	ResizeHandle.MouseLeave:Connect(function()
+		if not Resizing then
+			TweenService:Create(ResizeHandle, TweenInfo.new(0.2), {
+				ImageTransparency = 0.4,
+				ImageColor3 = Color3.fromRGB(160, 160, 175)
+			}):Play()
+		end
+	end)
+
+	ResizeHandle.InputBegan:Connect(function(Input)
+		if Input.UserInputType == Enum.UserInputType.MouseButton1 then
+			Resizing = true
+			StartMouse = Input.Position
+			StartSize = Main.AbsoluteSize
+			Input.Changed:Connect(function()
+				if Input.UserInputState == Enum.UserInputState.End then
+					Resizing = false
+					TweenService:Create(ResizeHandle, TweenInfo.new(0.2), {
+						ImageTransparency = 0.4,
+						ImageColor3 = Color3.fromRGB(160, 160, 175)
+					}):Play()
+				end
+			end)
+		end
+	end)
+
+	UserInputService.InputChanged:Connect(function(Input)
+		if Resizing and Input.UserInputType == Enum.UserInputType.MouseMovement then
+			local Delta = Input.Position - StartMouse
+			local NewX = math.max(MinSize.X, StartSize.X + Delta.X)
+			local NewY = math.max(MinSize.Y, StartSize.Y + Delta.Y)
+			Main.Size = UDim2.new(0, NewX, 0, NewY)
+		end
+	end)
+end
+
 local NotificationHolder = SetProps(SetChildren(MakeElement("TFrame"), {
 	SetProps(MakeElement("List"), {
 		HorizontalAlignment = Enum.HorizontalAlignment.Center,
 		SortOrder = Enum.SortOrder.LayoutOrder,
 		VerticalAlignment = Enum.VerticalAlignment.Bottom,
-		Padding = UDim.new(0, 5)
+		Padding = UDim.new(0, 6)
 	})
 }), {
 	Position = UDim2.new(1, -25, 1, -25),
@@ -503,7 +449,7 @@ function OrionLib:MakeNotification(NotificationConfig)
 		NotificationConfig.Name = NotificationConfig.Name or "Notification"
 		NotificationConfig.Content = NotificationConfig.Content or "Test"
 		NotificationConfig.Image = NotificationConfig.Image or "rbxassetid://4384403532"
-		NotificationConfig.Time = NotificationConfig.Time or 15
+		NotificationConfig.Time = NotificationConfig.Time or 5
 
 		local NotificationParent = SetProps(MakeElement("TFrame"), {
 			Size = UDim2.new(1, 0, 0, 0),
@@ -511,48 +457,45 @@ function OrionLib:MakeNotification(NotificationConfig)
 			Parent = NotificationHolder
 		})
 
-		local NotificationFrame = SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(20, 20, 26), 0, 10), {
+		local NotificationFrame = SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(18, 18, 24), 0, 8), {
 			Parent = NotificationParent,
 			Size = UDim2.new(1, 0, 0, 0),
-			Position = UDim2.new(1, -55, 0, 0),
-			BackgroundTransparency = 0,
+			Position = UDim2.new(1, -50, 0, 0),
 			AutomaticSize = Enum.AutomaticSize.Y
 		}), {
-			MakeElement("Stroke", Color3.fromRGB(50, 50, 60), 1.2),
+			MakeElement("Stroke", Color3.fromRGB(45, 45, 55), 1),
 			MakeElement("Padding", 12, 12, 12, 12),
 			SetProps(MakeElement("Image", NotificationConfig.Image), {
-				Size = UDim2.new(0, 20, 0, 20),
+				Size = UDim2.new(0, 18, 0, 18),
 				ImageColor3 = Color3.fromRGB(240, 240, 245),
 				Name = "Icon"
 			}),
-			SetProps(MakeElement("Label", NotificationConfig.Name, 15), {
-				Size = UDim2.new(1, -30, 0, 20),
-				Position = UDim2.new(0, 30, 0, 0),
+			SetProps(MakeElement("Label", NotificationConfig.Name, 14), {
+				Size = UDim2.new(1, -28, 0, 18),
+				Position = UDim2.new(0, 28, 0, 0),
 				Font = Enum.Font.GothamBold,
 				Name = "Title"
 			}),
-			SetProps(MakeElement("Label", NotificationConfig.Content, 14), {
+			SetProps(MakeElement("Label", NotificationConfig.Content, 13), {
 				Size = UDim2.new(1, 0, 0, 0),
-				Position = UDim2.new(0, 0, 0, 25),
-				Font = Enum.Font.GothamSemibold,
+				Position = UDim2.new(0, 0, 0, 22),
+				Font = Enum.Font.Gotham,
 				Name = "Content",
 				AutomaticSize = Enum.AutomaticSize.Y,
-				TextColor3 = Color3.fromRGB(190, 190, 200),
+				TextColor3 = Color3.fromRGB(180, 180, 195),
 				TextWrapped = true
 			})
 		})
 
-		TweenService:Create(NotificationFrame, TweenInfo.new(0.45, Enum.EasingStyle.Quint), {Position = UDim2.new(0, 0, 0, 0)}):Play()
-		task.wait(NotificationConfig.Time - 0.88)
-		TweenService:Create(NotificationFrame.Icon, TweenInfo.new(0.35, Enum.EasingStyle.Quint), {ImageTransparency = 1}):Play()
-		TweenService:Create(NotificationFrame, TweenInfo.new(0.7, Enum.EasingStyle.Quint), {BackgroundTransparency = 0.6}):Play()
-		task.wait(0.3)
-		TweenService:Create(NotificationFrame.UIStroke, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {Transparency = 0.9}):Play()
-		TweenService:Create(NotificationFrame.Title, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {TextTransparency = 0.4}):Play()
-		TweenService:Create(NotificationFrame.Content, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {TextTransparency = 0.5}):Play()
-		task.wait(0.05)
-		NotificationFrame:TweenPosition(UDim2.new(1, 20, 0, 0), "In", "Quint", 0.7, true)
-		task.wait(1.2)
+		TweenService:Create(NotificationFrame, TweenInfo.new(0.4, Enum.EasingStyle.Quint), {Position = UDim2.new(0, 0, 0, 0)}):Play()
+		task.wait(NotificationConfig.Time - 0.7)
+		TweenService:Create(NotificationFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {BackgroundTransparency = 0.7}):Play()
+		TweenService:Create(NotificationFrame.Icon, TweenInfo.new(0.4, Enum.EasingStyle.Quint), {ImageTransparency = 1}):Play()
+		TweenService:Create(NotificationFrame.Title, TweenInfo.new(0.4, Enum.EasingStyle.Quint), {TextTransparency = 0.5}):Play()
+		TweenService:Create(NotificationFrame.Content, TweenInfo.new(0.4, Enum.EasingStyle.Quint), {TextTransparency = 0.6}):Play()
+		task.wait(0.2)
+		NotificationFrame:TweenPosition(UDim2.new(1, 20, 0, 0), "In", "Quint", 0.55, true)
+		task.wait(0.7)
 		NotificationFrame:Destroy()
 	end)
 end
@@ -564,8 +507,8 @@ function OrionLib:Init()
 				LoadCfg(readfile(OrionLib.Folder .. "/" .. game.GameId .. ".txt"))
 				OrionLib:MakeNotification({
 					Name = "Configuration",
-					Content = "Auto-loaded configuration for the game " .. game.GameId .. ".",
-					Time = 5
+					Content = "Config loaded for game " .. game.GameId,
+					Time = 4
 				})
 			end
 		end)
@@ -576,15 +519,14 @@ function OrionLib:MakeWindow(WindowConfig)
 	local FirstTab = true
 	local Minimized = false
 	local UIHidden = false
+	local CurrentSize = UDim2.new(0, 615, 0, 344)
 
 	WindowConfig = WindowConfig or {}
 	WindowConfig.Name = WindowConfig.Name or "Orion Library"
 	WindowConfig.ConfigFolder = WindowConfig.ConfigFolder or WindowConfig.Name
 	WindowConfig.SaveConfig = WindowConfig.SaveConfig or false
 	WindowConfig.HidePremium = WindowConfig.HidePremium or false
-	if WindowConfig.IntroEnabled == nil then
-		WindowConfig.IntroEnabled = true
-	end
+	WindowConfig.IntroEnabled = WindowConfig.IntroEnabled ~= false
 	WindowConfig.IntroText = WindowConfig.IntroText or "Orion Library"
 	WindowConfig.CloseCallback = WindowConfig.CloseCallback or function() end
 	WindowConfig.ShowIcon = WindowConfig.ShowIcon or false
@@ -593,17 +535,15 @@ function OrionLib:MakeWindow(WindowConfig)
 	OrionLib.Folder = WindowConfig.ConfigFolder
 	OrionLib.SaveCfg = WindowConfig.SaveConfig
 
-	if WindowConfig.SaveConfig then
-		if not isfolder(WindowConfig.ConfigFolder) then
-			makefolder(WindowConfig.ConfigFolder)
-		end
+	if WindowConfig.SaveConfig and not isfolder(WindowConfig.ConfigFolder) then
+		makefolder(WindowConfig.ConfigFolder)
 	end
 
-	local TabHolder = AddThemeObject(SetChildren(SetProps(MakeElement("ScrollFrame", Color3.fromRGB(255, 255, 255), 4), {
+	local TabHolder = AddThemeObject(SetChildren(SetProps(MakeElement("ScrollFrame", Color3.fromRGB(255, 255, 255), 3), {
 		Size = UDim2.new(1, 0, 1, -50)
 	}), {
 		MakeElement("List"),
-		MakeElement("Padding", 8, 0, 0, 8)
+		MakeElement("Padding", 8, 6, 6, 8)
 	}), "Divider")
 
 	AddConnection(TabHolder.UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"), function()
@@ -617,7 +557,7 @@ function OrionLib:MakeWindow(WindowConfig)
 	}), {
 		AddThemeObject(SetProps(MakeElement("Image", "rbxassetid://7072725342"), {
 			Position = UDim2.new(0, 9, 0, 6),
-			Size = UDim2.new(0, 18, 0, 18)
+			Size = UDim2.new(0, 16, 0, 16)
 		}), "Text")
 	})
 
@@ -627,26 +567,29 @@ function OrionLib:MakeWindow(WindowConfig)
 	}), {
 		AddThemeObject(SetProps(MakeElement("Image", "rbxassetid://7072719338"), {
 			Position = UDim2.new(0, 9, 0, 6),
-			Size = UDim2.new(0, 18, 0, 18),
+			Size = UDim2.new(0, 16, 0, 16),
 			Name = "Ico"
 		}), "Text")
 	})
 
 	local DragPoint = SetProps(MakeElement("TFrame"), {
-		Size = UDim2.new(1, 0, 0, 50)
+		Size = UDim2.new(1, 0, 0, 48)
 	})
 
-	local WindowStuff = AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(255, 255, 255), 0, 10), {
-		Size = UDim2.new(0, 150, 1, -50),
-		Position = UDim2.new(0, 0, 0, 50)
+	local WindowStuff = AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(255, 255, 255), 0, 8), {
+		Size = UDim2.new(0, 150, 1, -48),
+		Position = UDim2.new(0, 0, 0, 48),
+		BackgroundTransparency = 0.35
 	}), {
 		AddThemeObject(SetProps(MakeElement("Frame"), {
-			Size = UDim2.new(1, 0, 0, 10),
-			Position = UDim2.new(0, 0, 0, 0)
+			Size = UDim2.new(1, 0, 0, 8),
+			Position = UDim2.new(0, 0, 0, 0),
+			BackgroundTransparency = 0.35
 		}), "Second"),
 		AddThemeObject(SetProps(MakeElement("Frame"), {
-			Size = UDim2.new(0, 10, 1, 0),
-			Position = UDim2.new(1, -10, 0, 0)
+			Size = UDim2.new(0, 8, 1, 0),
+			Position = UDim2.new(1, -8, 0, 0),
+			BackgroundTransparency = 0.35
 		}), "Second"),
 		AddThemeObject(SetProps(MakeElement("Frame"), {
 			Size = UDim2.new(0, 1, 1, 0),
@@ -654,15 +597,15 @@ function OrionLib:MakeWindow(WindowConfig)
 		}), "Stroke"),
 		TabHolder,
 		SetChildren(SetProps(MakeElement("TFrame"), {
-			Size = UDim2.new(1, 0, 0, 50),
-			Position = UDim2.new(0, 0, 1, -50)
+			Size = UDim2.new(1, 0, 0, 48),
+			Position = UDim2.new(0, 0, 1, -48)
 		}), {
 			AddThemeObject(SetProps(MakeElement("Frame"), {
 				Size = UDim2.new(1, 0, 0, 1)
 			}), "Stroke"),
 			AddThemeObject(SetChildren(SetProps(MakeElement("Frame"), {
 				AnchorPoint = Vector2.new(0, 0.5),
-				Size = UDim2.new(0, 32, 0, 32),
+				Size = UDim2.new(0, 30, 0, 30),
 				Position = UDim2.new(0, 10, 0.5, 0)
 			}), {
 				SetProps(MakeElement("Image", "https://www.roblox.com/headshot-thumbnail/image?userId=" .. LocalPlayer.UserId .. "&width=420&height=420&format=png"), {
@@ -675,31 +618,31 @@ function OrionLib:MakeWindow(WindowConfig)
 			}), "Divider"),
 			SetChildren(SetProps(MakeElement("TFrame"), {
 				AnchorPoint = Vector2.new(0, 0.5),
-				Size = UDim2.new(0, 32, 0, 32),
+				Size = UDim2.new(0, 30, 0, 30),
 				Position = UDim2.new(0, 10, 0.5, 0)
 			}), {
 				AddThemeObject(MakeElement("Stroke"), "Stroke"),
 				MakeElement("Corner", 1)
 			}),
-			AddThemeObject(SetProps(MakeElement("Label", LocalPlayer.DisplayName, WindowConfig.HidePremium and 14 or 13), {
-				Size = UDim2.new(1, -60, 0, 13),
-				Position = WindowConfig.HidePremium and UDim2.new(0, 50, 0, 19) or UDim2.new(0, 50, 0, 12),
+			AddThemeObject(SetProps(MakeElement("Label", LocalPlayer.DisplayName, WindowConfig.HidePremium and 13 or 12), {
+				Size = UDim2.new(1, -55, 0, 13),
+				Position = WindowConfig.HidePremium and UDim2.new(0, 48, 0, 17) or UDim2.new(0, 48, 0, 11),
 				Font = Enum.Font.GothamBold,
 				ClipsDescendants = true
 			}), "Text"),
-			AddThemeObject(SetProps(MakeElement("Label", "", 12), {
-				Size = UDim2.new(1, -60, 0, 12),
-				Position = UDim2.new(0, 50, 1, -25),
+			AddThemeObject(SetProps(MakeElement("Label", "", 11), {
+				Size = UDim2.new(1, -55, 0, 11),
+				Position = UDim2.new(0, 48, 1, -22),
 				Visible = not WindowConfig.HidePremium
 			}), "TextDark")
 		})
 	}), "Second")
 
-	local WindowName = AddThemeObject(SetProps(MakeElement("Label", WindowConfig.Name, 14), {
+	local WindowName = AddThemeObject(SetProps(MakeElement("Label", WindowConfig.Name, 15), {
 		Size = UDim2.new(1, -30, 2, 0),
-		Position = UDim2.new(0, 25, 0, -24),
+		Position = UDim2.new(0, 22, 0, -22),
 		Font = Enum.Font.GothamBlack,
-		TextSize = 20
+		TextSize = 18
 	}), "Text")
 
 	local WindowTopBarLine = AddThemeObject(SetProps(MakeElement("Frame"), {
@@ -707,54 +650,54 @@ function OrionLib:MakeWindow(WindowConfig)
 		Position = UDim2.new(0, 0, 1, -1)
 	}), "Stroke")
 
-local MainWindow = AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(255, 255, 255), 0, 10), {
-	Parent = Orion,
-	Position = UDim2.new(0.5, -307, 0.5, -172),
-	Size = UDim2.new(0, 615, 0, 344),
-	ClipsDescendants = true
-}), {
-	SetChildren(SetProps(MakeElement("TFrame"), {
-		Size = UDim2.new(1, 0, 0, 50),
-		Name = "TopBar"
+	local MainWindow = AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(255, 255, 255), 0, 8), {
+		Parent = Orion,
+		Position = UDim2.new(0.5, -307, 0.5, -172),
+		Size = CurrentSize,
+		ClipsDescendants = true
 	}), {
-		WindowName,
-		WindowTopBarLine,
-		AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(255, 255, 255), 0, 7), {
-			Size = UDim2.new(0, 70, 0, 30),
-			Position = UDim2.new(1, -90, 0, 10)
+		SetChildren(SetProps(MakeElement("TFrame"), {
+			Size = UDim2.new(1, 0, 0, 48),
+			Name = "TopBar"
 		}), {
-			AddThemeObject(MakeElement("Stroke"), "Stroke"),
-			AddThemeObject(SetProps(MakeElement("Frame"), {
-				Size = UDim2.new(0, 1, 1, 0),
-				Position = UDim2.new(0.5, 0, 0, 0)
-			}), "Stroke"),
-			CloseBtn,
-			MinimizeBtn
-		}), "Second")
-	}),
-	DragPoint,
-	WindowStuff
-}), "Main")
+			WindowName,
+			WindowTopBarLine,
+			AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(255, 255, 255), 0, 6), {
+				Size = UDim2.new(0, 64, 0, 28),
+				Position = UDim2.new(1, -82, 0, 10)
+			}), {
+				AddThemeObject(MakeElement("Stroke"), "Stroke"),
+				AddThemeObject(SetProps(MakeElement("Frame"), {
+					Size = UDim2.new(0, 1, 1, 0),
+					Position = UDim2.new(0.5, 0, 0, 0)
+				}), "Stroke"),
+				CloseBtn,
+				MinimizeBtn
+			}), "Second")
+		}),
+		DragPoint,
+		WindowStuff
+	}), "Main")
 
-if WindowConfig.ShowIcon then
-	WindowName.Position = UDim2.new(0, 50, 0, -24)
-	local WindowIcon = SetProps(MakeElement("Image", WindowConfig.Icon), {
-		Size = UDim2.new(0, 20, 0, 20),
-		Position = UDim2.new(0, 25, 0, 15)
-	})
-	WindowIcon.Parent = MainWindow.TopBar
-end
+	if WindowConfig.ShowIcon then
+		WindowName.Position = UDim2.new(0, 48, 0, -22)
+		local WindowIcon = SetProps(MakeElement("Image", WindowConfig.Icon), {
+			Size = UDim2.new(0, 18, 0, 18),
+			Position = UDim2.new(0, 22, 0, 15)
+		})
+		WindowIcon.Parent = MainWindow.TopBar
+	end
 
-AddDraggingFunctionality(DragPoint, MainWindow)
-
+	AddDraggingFunctionality(DragPoint, MainWindow)
+	AddResizeFunctionality(MainWindow, Vector2.new(480, 280))
 
 	AddConnection(CloseBtn.MouseButton1Up, function()
 		MainWindow.Visible = false
 		UIHidden = true
 		OrionLib:MakeNotification({
 			Name = "Interface Hidden",
-			Content = "Tap RightShift to reopen the interface",
-			Time = 5
+			Content = "Press RightShift to reopen",
+			Time = 4
 		})
 		WindowConfig.CloseCallback()
 	end)
@@ -768,18 +711,23 @@ AddDraggingFunctionality(DragPoint, MainWindow)
 
 	AddConnection(MinimizeBtn.MouseButton1Up, function()
 		if Minimized then
-			TweenService:Create(MainWindow, TweenInfo.new(0.45, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Size = UDim2.new(0, 615, 0, 344)}):Play()
+			TweenService:Create(MainWindow, TweenInfo.new(0.4, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+				Size = CurrentSize
+			}):Play()
 			MinimizeBtn.Ico.Image = "rbxassetid://7072719338"
 			task.wait(0.02)
 			MainWindow.ClipsDescendants = false
 			WindowStuff.Visible = true
 			WindowTopBarLine.Visible = true
 		else
+			CurrentSize = MainWindow.Size
 			MainWindow.ClipsDescendants = true
 			WindowTopBarLine.Visible = false
 			MinimizeBtn.Ico.Image = "rbxassetid://7072720870"
-			TweenService:Create(MainWindow, TweenInfo.new(0.45, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Size = UDim2.new(0, WindowName.TextBounds.X + 140, 0, 50)}):Play()
-			task.wait(0.1)
+			TweenService:Create(MainWindow, TweenInfo.new(0.4, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+				Size = UDim2.new(0, WindowName.TextBounds.X + 130, 0, 48)
+			}):Play()
+			task.wait(0.08)
 			WindowStuff.Visible = false
 		end
 		Minimized = not Minimized
@@ -787,33 +735,32 @@ AddDraggingFunctionality(DragPoint, MainWindow)
 
 	local function LoadSequence()
 		MainWindow.Visible = false
-		local LoadSequenceLogo = SetProps(MakeElement("Image", WindowConfig.IntroIcon), {
+		local Logo = SetProps(MakeElement("Image", WindowConfig.IntroIcon), {
 			Parent = Orion,
 			AnchorPoint = Vector2.new(0.5, 0.5),
-			Position = UDim2.new(0.5, 0, 0.4, 0),
-			Size = UDim2.new(0, 28, 0, 28),
-			ImageColor3 = Color3.fromRGB(255, 255, 255),
+			Position = UDim2.new(0.5, 0, 0.42, 0),
+			Size = UDim2.new(0, 26, 0, 26),
 			ImageTransparency = 1
 		})
-		local LoadSequenceText = SetProps(MakeElement("Label", WindowConfig.IntroText, 14), {
+		local Text = SetProps(MakeElement("Label", WindowConfig.IntroText, 14), {
 			Parent = Orion,
 			Size = UDim2.new(1, 0, 1, 0),
 			AnchorPoint = Vector2.new(0.5, 0.5),
-			Position = UDim2.new(0.5, 19, 0.5, 0),
+			Position = UDim2.new(0.5, 18, 0.5, 0),
 			TextXAlignment = Enum.TextXAlignment.Center,
 			Font = Enum.Font.GothamBold,
 			TextTransparency = 1
 		})
-		TweenService:Create(LoadSequenceLogo, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageTransparency = 0, Position = UDim2.new(0.5, 0, 0.5, 0)}):Play()
-		task.wait(0.8)
-		TweenService:Create(LoadSequenceLogo, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.new(0.5, -(LoadSequenceText.TextBounds.X / 2), 0.5, 0)}):Play()
-		task.wait(0.3)
-		TweenService:Create(LoadSequenceText, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 0}):Play()
-		task.wait(1.8)
-		TweenService:Create(LoadSequenceText, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 1}):Play()
+		TweenService:Create(Logo, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {ImageTransparency = 0, Position = UDim2.new(0.5, 0, 0.5, 0)}):Play()
+		task.wait(0.7)
+		TweenService:Create(Logo, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {Position = UDim2.new(0.5, -(Text.TextBounds.X / 2), 0.5, 0)}):Play()
+		task.wait(0.25)
+		TweenService:Create(Text, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {TextTransparency = 0}):Play()
+		task.wait(1.6)
+		TweenService:Create(Text, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {TextTransparency = 1}):Play()
 		MainWindow.Visible = true
-		LoadSequenceLogo:Destroy()
-		LoadSequenceText:Destroy()
+		Logo:Destroy()
+		Text:Destroy()
 	end
 
 	if WindowConfig.IntroEnabled then
@@ -828,50 +775,48 @@ AddDraggingFunctionality(DragPoint, MainWindow)
 		TabConfig.PremiumOnly = TabConfig.PremiumOnly or false
 
 		local TabFrame = SetChildren(SetProps(MakeElement("Button"), {
-			Size = UDim2.new(1, 0, 0, 30),
+			Size = UDim2.new(1, 0, 0, 32),
 			Parent = TabHolder
 		}), {
 			AddThemeObject(SetProps(MakeElement("Image", TabConfig.Icon), {
 				AnchorPoint = Vector2.new(0, 0.5),
-				Size = UDim2.new(0, 18, 0, 18),
+				Size = UDim2.new(0, 16, 0, 16),
 				Position = UDim2.new(0, 10, 0.5, 0),
-				ImageTransparency = 0.4,
+				ImageTransparency = 0.45,
 				Name = "Ico"
 			}), "Text"),
-			AddThemeObject(SetProps(MakeElement("Label", TabConfig.Name, 14), {
-				Size = UDim2.new(1, -35, 1, 0),
-				Position = UDim2.new(0, 35, 0, 0),
+			AddThemeObject(SetProps(MakeElement("Label", TabConfig.Name, 13), {
+				Size = UDim2.new(1, -32, 1, 0),
+				Position = UDim2.new(0, 32, 0, 0),
 				Font = Enum.Font.GothamSemibold,
-				TextTransparency = 0.4,
+				TextTransparency = 0.45,
 				Name = "Title"
 			}), "Text")
 		})
 
 		local Icon = GetIcon(TabConfig.Icon)
-		if Icon then
-			TabFrame.Ico.Image = Icon
-		end
+		if Icon then TabFrame.Ico.Image = Icon end
 
-		local Container = AddThemeObject(SetChildren(SetProps(MakeElement("ScrollFrame", Color3.fromRGB(255, 255, 255), 5), {
-			Size = UDim2.new(1, -150, 1, -50),
-			Position = UDim2.new(0, 150, 0, 50),
+		local Container = AddThemeObject(SetChildren(SetProps(MakeElement("ScrollFrame", Color3.fromRGB(255, 255, 255), 4), {
+			Size = UDim2.new(1, -150, 1, -48),
+			Position = UDim2.new(0, 150, 0, 48),
 			Parent = MainWindow,
 			Visible = false,
 			Name = "ItemContainer"
 		}), {
 			MakeElement("List", 0, 6),
-			MakeElement("Padding", 15, 10, 10, 15)
+			MakeElement("Padding", 14, 10, 10, 14)
 		}), "Divider")
 
 		AddConnection(Container.UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"), function()
-			Container.CanvasSize = UDim2.new(0, 0, 0, Container.UIListLayout.AbsoluteContentSize.Y + 30)
+			Container.CanvasSize = UDim2.new(0, 0, 0, Container.UIListLayout.AbsoluteContentSize.Y + 28)
 		end)
 
 		if FirstTab then
 			FirstTab = false
 			TabFrame.Ico.ImageTransparency = 0
 			TabFrame.Title.TextTransparency = 0
-			TabFrame.Title.Font = Enum.Font.GothamBlack
+			TabFrame.Title.Font = Enum.Font.GothamBold
 			Container.Visible = true
 		end
 
@@ -879,18 +824,18 @@ AddDraggingFunctionality(DragPoint, MainWindow)
 			for _, Tab in next, TabHolder:GetChildren() do
 				if Tab:IsA("TextButton") then
 					Tab.Title.Font = Enum.Font.GothamSemibold
-					TweenService:Create(Tab.Ico, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {ImageTransparency = 0.4}):Play()
-					TweenService:Create(Tab.Title, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {TextTransparency = 0.4}):Play()
+					TweenService:Create(Tab.Ico, TweenInfo.new(0.22, Enum.EasingStyle.Quint), {ImageTransparency = 0.45}):Play()
+					TweenService:Create(Tab.Title, TweenInfo.new(0.22, Enum.EasingStyle.Quint), {TextTransparency = 0.45}):Play()
 				end
 			end
-			for _, ItemContainer in next, MainWindow:GetChildren() do
-				if ItemContainer.Name == "ItemContainer" then
-					ItemContainer.Visible = false
+			for _, Item in next, MainWindow:GetChildren() do
+				if Item.Name == "ItemContainer" then
+					Item.Visible = false
 				end
 			end
-			TweenService:Create(TabFrame.Ico, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {ImageTransparency = 0}):Play()
-			TweenService:Create(TabFrame.Title, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {TextTransparency = 0}):Play()
-			TabFrame.Title.Font = Enum.Font.GothamBlack
+			TweenService:Create(TabFrame.Ico, TweenInfo.new(0.22, Enum.EasingStyle.Quint), {ImageTransparency = 0}):Play()
+			TweenService:Create(TabFrame.Title, TweenInfo.new(0.22, Enum.EasingStyle.Quint), {TextTransparency = 0}):Play()
+			TabFrame.Title.Font = Enum.Font.GothamBold
 			Container.Visible = true
 		end)
 
@@ -898,12 +843,12 @@ AddDraggingFunctionality(DragPoint, MainWindow)
 			local ElementFunction = {}
 
 			function ElementFunction:AddLabel(Text)
-				local LabelFrame = AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(255, 255, 255), 0, 5), {
-					Size = UDim2.new(1, 0, 0, 30),
-					BackgroundTransparency = 0.7,
+				local LabelFrame = AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(255, 255, 255), 0, 6), {
+					Size = UDim2.new(1, 0, 0, 28),
+					BackgroundTransparency = 0.75,
 					Parent = ItemParent
 				}), {
-					AddThemeObject(SetProps(MakeElement("Label", Text, 15), {
+					AddThemeObject(SetProps(MakeElement("Label", Text, 13), {
 						Size = UDim2.new(1, -12, 1, 0),
 						Position = UDim2.new(0, 12, 0, 0),
 						Font = Enum.Font.GothamBold,
@@ -912,32 +857,32 @@ AddDraggingFunctionality(DragPoint, MainWindow)
 					AddThemeObject(MakeElement("Stroke"), "Stroke")
 				}), "Second")
 
-				local LabelFunction = {}
-				function LabelFunction:Set(ToChange)
+				local Func = {}
+				function Func:Set(ToChange)
 					LabelFrame.Content.Text = ToChange
 				end
-				return LabelFunction
+				return Func
 			end
 
 			function ElementFunction:AddParagraph(Text, Content)
 				Text = Text or "Text"
 				Content = Content or "Content"
 
-				local ParagraphFrame = AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(255, 255, 255), 0, 5), {
-					Size = UDim2.new(1, 0, 0, 30),
-					BackgroundTransparency = 0.7,
+				local ParagraphFrame = AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(255, 255, 255), 0, 6), {
+					Size = UDim2.new(1, 0, 0, 28),
+					BackgroundTransparency = 0.75,
 					Parent = ItemParent
 				}), {
-					AddThemeObject(SetProps(MakeElement("Label", Text, 15), {
+					AddThemeObject(SetProps(MakeElement("Label", Text, 13), {
 						Size = UDim2.new(1, -12, 0, 14),
-						Position = UDim2.new(0, 12, 0, 10),
+						Position = UDim2.new(0, 12, 0, 8),
 						Font = Enum.Font.GothamBold,
 						Name = "Title"
 					}), "Text"),
-					AddThemeObject(SetProps(MakeElement("Label", "", 13), {
+					AddThemeObject(SetProps(MakeElement("Label", "", 12), {
 						Size = UDim2.new(1, -24, 0, 0),
-						Position = UDim2.new(0, 12, 0, 26),
-						Font = Enum.Font.GothamSemibold,
+						Position = UDim2.new(0, 12, 0, 24),
+						Font = Enum.Font.Gotham,
 						Name = "Content",
 						TextWrapped = true
 					}), "TextDark"),
@@ -946,16 +891,16 @@ AddDraggingFunctionality(DragPoint, MainWindow)
 
 				AddConnection(ParagraphFrame.Content:GetPropertyChangedSignal("Text"), function()
 					ParagraphFrame.Content.Size = UDim2.new(1, -24, 0, ParagraphFrame.Content.TextBounds.Y)
-					ParagraphFrame.Size = UDim2.new(1, 0, 0, ParagraphFrame.Content.TextBounds.Y + 35)
+					ParagraphFrame.Size = UDim2.new(1, 0, 0, ParagraphFrame.Content.TextBounds.Y + 32)
 				end)
 
 				ParagraphFrame.Content.Text = Content
 
-				local ParagraphFunction = {}
-				function ParagraphFunction:Set(ToChange)
+				local Func = {}
+				function Func:Set(ToChange)
 					ParagraphFrame.Content.Text = ToChange
 				end
-				return ParagraphFunction
+				return Func
 			end
 
 			function ElementFunction:AddButton(ButtonConfig)
@@ -964,24 +909,21 @@ AddDraggingFunctionality(DragPoint, MainWindow)
 				ButtonConfig.Callback = ButtonConfig.Callback or function() end
 				ButtonConfig.Icon = ButtonConfig.Icon or "rbxassetid://3944703587"
 
-				local Button = {}
-				local Click = SetProps(MakeElement("Button"), {
-					Size = UDim2.new(1, 0, 1, 0)
-				})
+				local Click = SetProps(MakeElement("Button"), {Size = UDim2.new(1, 0, 1, 0)})
 
-				local ButtonFrame = AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(255, 255, 255), 0, 5), {
-					Size = UDim2.new(1, 0, 0, 33),
+				local ButtonFrame = AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(255, 255, 255), 0, 6), {
+					Size = UDim2.new(1, 0, 0, 32),
 					Parent = ItemParent
 				}), {
-					AddThemeObject(SetProps(MakeElement("Label", ButtonConfig.Name, 15), {
+					AddThemeObject(SetProps(MakeElement("Label", ButtonConfig.Name, 13), {
 						Size = UDim2.new(1, -12, 1, 0),
 						Position = UDim2.new(0, 12, 0, 0),
 						Font = Enum.Font.GothamBold,
 						Name = "Content"
 					}), "Text"),
 					AddThemeObject(SetProps(MakeElement("Image", ButtonConfig.Icon), {
-						Size = UDim2.new(0, 20, 0, 20),
-						Position = UDim2.new(1, -30, 0, 7)
+						Size = UDim2.new(0, 16, 0, 16),
+						Position = UDim2.new(1, -28, 0, 8)
 					}), "TextDark"),
 					AddThemeObject(MakeElement("Stroke"), "Stroke"),
 					Click
@@ -993,37 +935,26 @@ AddDraggingFunctionality(DragPoint, MainWindow)
 
 				AddConnection(Click.MouseEnter, function()
 					local S = GetSecond()
-					TweenService:Create(ButtonFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-						BackgroundColor3 = Color3.fromRGB(S.R * 255 + 4, S.G * 255 + 4, S.B * 255 + 4)
+					TweenService:Create(ButtonFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quint), {
+						BackgroundColor3 = Color3.fromRGB(S.R * 255 + 5, S.G * 255 + 5, S.B * 255 + 5)
 					}):Play()
 				end)
 
 				AddConnection(Click.MouseLeave, function()
-					TweenService:Create(ButtonFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+					TweenService:Create(ButtonFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quint), {
 						BackgroundColor3 = GetSecond()
 					}):Play()
 				end)
 
 				AddConnection(Click.MouseButton1Up, function()
-					local S = GetSecond()
-					TweenService:Create(ButtonFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-						BackgroundColor3 = Color3.fromRGB(S.R * 255 + 4, S.G * 255 + 4, S.B * 255 + 4)
-					}):Play()
 					task.spawn(ButtonConfig.Callback)
 				end)
 
-				AddConnection(Click.MouseButton1Down, function()
-					local S = GetSecond()
-					TweenService:Create(ButtonFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-						BackgroundColor3 = Color3.fromRGB(S.R * 255 + 8, S.G * 255 + 8, S.B * 255 + 8)
-					}):Play()
-				end)
-
-				function Button:Set(ButtonText)
+				local Func = {}
+				function Func:Set(ButtonText)
 					ButtonFrame.Content.Text = ButtonText
 				end
-
-				return Button
+				return Func
 			end
 
 			function ElementFunction:AddToggle(ToggleConfig)
@@ -1036,13 +967,11 @@ AddDraggingFunctionality(DragPoint, MainWindow)
 				ToggleConfig.Save = ToggleConfig.Save or false
 
 				local Toggle = {Value = ToggleConfig.Default, Save = ToggleConfig.Save}
-				local Click = SetProps(MakeElement("Button"), {
-					Size = UDim2.new(1, 0, 1, 0)
-				})
+				local Click = SetProps(MakeElement("Button"), {Size = UDim2.new(1, 0, 1, 0)})
 
 				local ToggleBox = SetChildren(SetProps(MakeElement("RoundFrame", ToggleConfig.Color, 0, 4), {
-					Size = UDim2.new(0, 24, 0, 24),
-					Position = UDim2.new(1, -24, 0.5, 0),
+					Size = UDim2.new(0, 22, 0, 22),
+					Position = UDim2.new(1, -22, 0.5, 0),
 					AnchorPoint = Vector2.new(0.5, 0.5)
 				}), {
 					SetProps(MakeElement("Stroke"), {
@@ -1051,7 +980,7 @@ AddDraggingFunctionality(DragPoint, MainWindow)
 						Transparency = 0.5
 					}),
 					SetProps(MakeElement("Image", "rbxassetid://3944680095"), {
-						Size = UDim2.new(0, 20, 0, 20),
+						Size = UDim2.new(0, 16, 0, 16),
 						AnchorPoint = Vector2.new(0.5, 0.5),
 						Position = UDim2.new(0.5, 0, 0.5, 0),
 						ImageColor3 = Color3.fromRGB(255, 255, 255),
@@ -1059,11 +988,11 @@ AddDraggingFunctionality(DragPoint, MainWindow)
 					})
 				})
 
-				local ToggleFrame = AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(255, 255, 255), 0, 5), {
-					Size = UDim2.new(1, 0, 0, 38),
+				local ToggleFrame = AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(255, 255, 255), 0, 6), {
+					Size = UDim2.new(1, 0, 0, 36),
 					Parent = ItemParent
 				}), {
-					AddThemeObject(SetProps(MakeElement("Label", ToggleConfig.Name, 15), {
+					AddThemeObject(SetProps(MakeElement("Label", ToggleConfig.Name, 13), {
 						Size = UDim2.new(1, -12, 1, 0),
 						Position = UDim2.new(0, 12, 0, 0),
 						Font = Enum.Font.GothamBold,
@@ -1077,15 +1006,15 @@ AddDraggingFunctionality(DragPoint, MainWindow)
 				function Toggle:Set(Value)
 					Toggle.Value = Value
 					local Theme = OrionLib.Themes[OrionLib.SelectedTheme]
-					TweenService:Create(ToggleBox, TweenInfo.new(0.28, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+					TweenService:Create(ToggleBox, TweenInfo.new(0.25, Enum.EasingStyle.Quint), {
 						BackgroundColor3 = Toggle.Value and ToggleConfig.Color or Theme.Divider
 					}):Play()
-					TweenService:Create(ToggleBox.Stroke, TweenInfo.new(0.28, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+					TweenService:Create(ToggleBox.Stroke, TweenInfo.new(0.25, Enum.EasingStyle.Quint), {
 						Color = Toggle.Value and ToggleConfig.Color or Theme.Stroke
 					}):Play()
-					TweenService:Create(ToggleBox.Ico, TweenInfo.new(0.28, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+					TweenService:Create(ToggleBox.Ico, TweenInfo.new(0.25, Enum.EasingStyle.Quint), {
 						ImageTransparency = Toggle.Value and 0 or 1,
-						Size = Toggle.Value and UDim2.new(0, 20, 0, 20) or UDim2.new(0, 8, 0, 8)
+						Size = Toggle.Value and UDim2.new(0, 16, 0, 16) or UDim2.new(0, 6, 0, 6)
 					}):Play()
 					ToggleConfig.Callback(Toggle.Value)
 				end
@@ -1098,31 +1027,20 @@ AddDraggingFunctionality(DragPoint, MainWindow)
 
 				AddConnection(Click.MouseEnter, function()
 					local S = GetSecond()
-					TweenService:Create(ToggleFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-						BackgroundColor3 = Color3.fromRGB(S.R * 255 + 4, S.G * 255 + 4, S.B * 255 + 4)
+					TweenService:Create(ToggleFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quint), {
+						BackgroundColor3 = Color3.fromRGB(S.R * 255 + 5, S.G * 255 + 5, S.B * 255 + 5)
 					}):Play()
 				end)
 
 				AddConnection(Click.MouseLeave, function()
-					TweenService:Create(ToggleFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+					TweenService:Create(ToggleFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quint), {
 						BackgroundColor3 = GetSecond()
 					}):Play()
 				end)
 
 				AddConnection(Click.MouseButton1Up, function()
-					local S = GetSecond()
-					TweenService:Create(ToggleFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-						BackgroundColor3 = Color3.fromRGB(S.R * 255 + 4, S.G * 255 + 4, S.B * 255 + 4)
-					}):Play()
 					SaveCfg(game.GameId)
 					Toggle:Set(not Toggle.Value)
-				end)
-
-				AddConnection(Click.MouseButton1Down, function()
-					local S = GetSecond()
-					TweenService:Create(ToggleFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-						BackgroundColor3 = Color3.fromRGB(S.R * 255 + 8, S.G * 255 + 8, S.B * 255 + 8)
-					}):Play()
 				end)
 
 				if ToggleConfig.Flag then
@@ -1149,12 +1067,12 @@ AddDraggingFunctionality(DragPoint, MainWindow)
 
 				local SliderDrag = SetChildren(SetProps(MakeElement("RoundFrame", SliderConfig.Color, 0, 5), {
 					Size = UDim2.new(0, 0, 1, 0),
-					BackgroundTransparency = 0.3,
+					BackgroundTransparency = 0.25,
 					ClipsDescendants = true
 				}), {
-					AddThemeObject(SetProps(MakeElement("Label", "value", 13), {
-						Size = UDim2.new(1, -12, 0, 14),
-						Position = UDim2.new(0, 12, 0, 6),
+					AddThemeObject(SetProps(MakeElement("Label", "value", 12), {
+						Size = UDim2.new(1, -10, 0, 14),
+						Position = UDim2.new(0, 10, 0, 5),
 						Font = Enum.Font.GothamBold,
 						Name = "Value",
 						TextTransparency = 0
@@ -1162,30 +1080,28 @@ AddDraggingFunctionality(DragPoint, MainWindow)
 				})
 
 				local SliderBar = SetChildren(SetProps(MakeElement("RoundFrame", SliderConfig.Color, 0, 5), {
-					Size = UDim2.new(1, -24, 0, 26),
-					Position = UDim2.new(0, 12, 0, 30),
-					BackgroundTransparency = 0.9
+					Size = UDim2.new(1, -24, 0, 24),
+					Position = UDim2.new(0, 12, 0, 28),
+					BackgroundTransparency = 0.85
 				}), {
-					SetProps(MakeElement("Stroke"), {
-						Color = SliderConfig.Color
-					}),
-					AddThemeObject(SetProps(MakeElement("Label", "value", 13), {
-						Size = UDim2.new(1, -12, 0, 14),
-						Position = UDim2.new(0, 12, 0, 6),
+					SetProps(MakeElement("Stroke"), {Color = SliderConfig.Color}),
+					AddThemeObject(SetProps(MakeElement("Label", "value", 12), {
+						Size = UDim2.new(1, -10, 0, 14),
+						Position = UDim2.new(0, 10, 0, 5),
 						Font = Enum.Font.GothamBold,
 						Name = "Value",
-						TextTransparency = 0.8
+						TextTransparency = 0.75
 					}), "Text"),
 					SliderDrag
 				})
 
-				local SliderFrame = AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(255, 255, 255), 0, 4), {
-					Size = UDim2.new(1, 0, 0, 65),
+				local SliderFrame = AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(255, 255, 255), 0, 6), {
+					Size = UDim2.new(1, 0, 0, 60),
 					Parent = ItemParent
 				}), {
-					AddThemeObject(SetProps(MakeElement("Label", SliderConfig.Name, 15), {
+					AddThemeObject(SetProps(MakeElement("Label", SliderConfig.Name, 13), {
 						Size = UDim2.new(1, -12, 0, 14),
-						Position = UDim2.new(0, 12, 0, 10),
+						Position = UDim2.new(0, 12, 0, 8),
 						Font = Enum.Font.GothamBold,
 						Name = "Content"
 					}), "Text"),
@@ -1198,7 +1114,7 @@ AddDraggingFunctionality(DragPoint, MainWindow)
 					if Instant then
 						SliderDrag.Size = UDim2.fromScale(Scale, 1)
 					else
-						TweenService:Create(SliderDrag, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+						TweenService:Create(SliderDrag, TweenInfo.new(0.12, Enum.EasingStyle.Quad), {
 							Size = UDim2.fromScale(Scale, 1)
 						}):Play()
 					end
@@ -1265,40 +1181,37 @@ AddDraggingFunctionality(DragPoint, MainWindow)
 
 				local DropdownList = MakeElement("List")
 
-				local DropdownContainer = AddThemeObject(SetProps(SetChildren(MakeElement("ScrollFrame", Color3.fromRGB(40, 40, 40), 4), {
+				local DropdownContainer = AddThemeObject(SetProps(SetChildren(MakeElement("ScrollFrame", Color3.fromRGB(40, 40, 40), 3), {
 					DropdownList
 				}), {
 					Parent = ItemParent,
-					Position = UDim2.new(0, 0, 0, 38),
-					Size = UDim2.new(1, 0, 1, -38),
+					Position = UDim2.new(0, 0, 0, 36),
+					Size = UDim2.new(1, 0, 1, -36),
 					ClipsDescendants = true
 				}), "Divider")
 
-				local Click = SetProps(MakeElement("Button"), {
-					Size = UDim2.new(1, 0, 1, 0)
-				})
+				local Click = SetProps(MakeElement("Button"), {Size = UDim2.new(1, 0, 1, 0)})
 
-				local DropdownFrame = AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(255, 255, 255), 0, 5), {
-					Size = UDim2.new(1, 0, 0, 38),
+				local DropdownFrame = AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(255, 255, 255), 0, 6), {
+					Size = UDim2.new(1, 0, 0, 36),
 					Parent = ItemParent,
 					ClipsDescendants = true
 				}), {
 					DropdownContainer,
 					SetProps(SetChildren(MakeElement("TFrame"), {
-						AddThemeObject(SetProps(MakeElement("Label", DropdownConfig.Name, 15), {
+						AddThemeObject(SetProps(MakeElement("Label", DropdownConfig.Name, 13), {
 							Size = UDim2.new(1, -12, 1, 0),
 							Position = UDim2.new(0, 12, 0, 0),
 							Font = Enum.Font.GothamBold,
 							Name = "Content"
 						}), "Text"),
 						AddThemeObject(SetProps(MakeElement("Image", "rbxassetid://7072706796"), {
-							Size = UDim2.new(0, 20, 0, 20),
+							Size = UDim2.new(0, 16, 0, 16),
 							AnchorPoint = Vector2.new(0, 0.5),
-							Position = UDim2.new(1, -30, 0.5, 0),
-							ImageColor3 = Color3.fromRGB(240, 240, 240),
+							Position = UDim2.new(1, -28, 0.5, 0),
 							Name = "Ico"
 						}), "TextDark"),
-						AddThemeObject(SetProps(MakeElement("Label", "Selected", 13), {
+						AddThemeObject(SetProps(MakeElement("Label", "Selected", 12), {
 							Size = UDim2.new(1, -40, 1, 0),
 							Font = Enum.Font.Gotham,
 							Name = "Selected",
@@ -1312,7 +1225,7 @@ AddDraggingFunctionality(DragPoint, MainWindow)
 						}), "Stroke"),
 						Click
 					}), {
-						Size = UDim2.new(1, 0, 0, 38),
+						Size = UDim2.new(1, 0, 0, 36),
 						ClipsDescendants = true,
 						Name = "F"
 					}),
@@ -1327,15 +1240,15 @@ AddDraggingFunctionality(DragPoint, MainWindow)
 				local function AddOptions(Options)
 					for _, Option in pairs(Options) do
 						local OptionBtn = AddThemeObject(SetProps(SetChildren(MakeElement("Button"), {
-							MakeElement("Corner", 0, 6),
-							AddThemeObject(SetProps(MakeElement("Label", Option, 13, 0.4), {
+							MakeElement("Corner", 0, 5),
+							AddThemeObject(SetProps(MakeElement("Label", Option, 12, 0.4), {
 								Position = UDim2.new(0, 8, 0, 0),
 								Size = UDim2.new(1, -8, 1, 0),
 								Name = "Title"
 							}), "Text")
 						}), {
 							Parent = DropdownContainer,
-							Size = UDim2.new(1, 0, 0, 28),
+							Size = UDim2.new(1, 0, 0, 26),
 							BackgroundTransparency = 1,
 							ClipsDescendants = true
 						}), "Divider")
@@ -1351,9 +1264,7 @@ AddDraggingFunctionality(DragPoint, MainWindow)
 
 				function Dropdown:Refresh(Options, Delete)
 					if Delete then
-						for _, v in pairs(Dropdown.Buttons) do
-							v:Destroy()
-						end
+						for _, v in pairs(Dropdown.Buttons) do v:Destroy() end
 						table.clear(Dropdown.Options)
 						table.clear(Dropdown.Buttons)
 					end
@@ -1366,8 +1277,8 @@ AddDraggingFunctionality(DragPoint, MainWindow)
 						Dropdown.Value = "..."
 						DropdownFrame.F.Selected.Text = Dropdown.Value
 						for _, v in pairs(Dropdown.Buttons) do
-							TweenService:Create(v, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 1}):Play()
-							TweenService:Create(v.Title, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 0.4}):Play()
+							TweenService:Create(v, TweenInfo.new(0.12, Enum.EasingStyle.Quad), {BackgroundTransparency = 1}):Play()
+							TweenService:Create(v.Title, TweenInfo.new(0.12, Enum.EasingStyle.Quad), {TextTransparency = 0.4}):Play()
 						end
 						return
 					end
@@ -1376,25 +1287,25 @@ AddDraggingFunctionality(DragPoint, MainWindow)
 					DropdownFrame.F.Selected.Text = Dropdown.Value
 
 					for _, v in pairs(Dropdown.Buttons) do
-						TweenService:Create(v, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 1}):Play()
-						TweenService:Create(v.Title, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 0.4}):Play()
+						TweenService:Create(v, TweenInfo.new(0.12, Enum.EasingStyle.Quad), {BackgroundTransparency = 1}):Play()
+						TweenService:Create(v.Title, TweenInfo.new(0.12, Enum.EasingStyle.Quad), {TextTransparency = 0.4}):Play()
 					end
-					TweenService:Create(Dropdown.Buttons[Value], TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0}):Play()
-					TweenService:Create(Dropdown.Buttons[Value].Title, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 0}):Play()
+					TweenService:Create(Dropdown.Buttons[Value], TweenInfo.new(0.12, Enum.EasingStyle.Quad), {BackgroundTransparency = 0}):Play()
+					TweenService:Create(Dropdown.Buttons[Value].Title, TweenInfo.new(0.12, Enum.EasingStyle.Quad), {TextTransparency = 0}):Play()
 					DropdownConfig.Callback(Dropdown.Value)
 				end
 
 				AddConnection(Click.MouseButton1Click, function()
 					Dropdown.Toggled = not Dropdown.Toggled
 					DropdownFrame.F.Line.Visible = Dropdown.Toggled
-					TweenService:Create(DropdownFrame.F.Ico, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Rotation = Dropdown.Toggled and 180 or 0}):Play()
+					TweenService:Create(DropdownFrame.F.Ico, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {Rotation = Dropdown.Toggled and 180 or 0}):Play()
 					if #Dropdown.Options > MaxElements then
-						TweenService:Create(DropdownFrame, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-							Size = Dropdown.Toggled and UDim2.new(1, 0, 0, 38 + (MaxElements * 28)) or UDim2.new(1, 0, 0, 38)
+						TweenService:Create(DropdownFrame, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {
+							Size = Dropdown.Toggled and UDim2.new(1, 0, 0, 36 + (MaxElements * 26)) or UDim2.new(1, 0, 0, 36)
 						}):Play()
 					else
-						TweenService:Create(DropdownFrame, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-							Size = Dropdown.Toggled and UDim2.new(1, 0, 0, DropdownList.AbsoluteContentSize.Y + 38) or UDim2.new(1, 0, 0, 38)
+						TweenService:Create(DropdownFrame, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {
+							Size = Dropdown.Toggled and UDim2.new(1, 0, 0, DropdownList.AbsoluteContentSize.Y + 36) or UDim2.new(1, 0, 0, 36)
 						}):Play()
 					end
 				end)
@@ -1418,18 +1329,15 @@ AddDraggingFunctionality(DragPoint, MainWindow)
 
 				local Bind = {Value = nil, Binding = false, Type = "Bind", Save = BindConfig.Save}
 				local Holding = false
-
-				local Click = SetProps(MakeElement("Button"), {
-					Size = UDim2.new(1, 0, 1, 0)
-				})
+				local Click = SetProps(MakeElement("Button"), {Size = UDim2.new(1, 0, 1, 0)})
 
 				local BindBox = AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(255, 255, 255), 0, 4), {
-					Size = UDim2.new(0, 24, 0, 24),
+					Size = UDim2.new(0, 22, 0, 22),
 					Position = UDim2.new(1, -12, 0.5, 0),
 					AnchorPoint = Vector2.new(1, 0.5)
 				}), {
 					AddThemeObject(MakeElement("Stroke"), "Stroke"),
-					AddThemeObject(SetProps(MakeElement("Label", "", 14), {
+					AddThemeObject(SetProps(MakeElement("Label", "", 12), {
 						Size = UDim2.new(1, 0, 1, 0),
 						Font = Enum.Font.GothamBold,
 						TextXAlignment = Enum.TextXAlignment.Center,
@@ -1437,11 +1345,11 @@ AddDraggingFunctionality(DragPoint, MainWindow)
 					}), "Text")
 				}), "Main")
 
-				local BindFrame = AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(255, 255, 255), 0, 5), {
-					Size = UDim2.new(1, 0, 0, 38),
+				local BindFrame = AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(255, 255, 255), 0, 6), {
+					Size = UDim2.new(1, 0, 0, 36),
 					Parent = ItemParent
 				}), {
-					AddThemeObject(SetProps(MakeElement("Label", BindConfig.Name, 15), {
+					AddThemeObject(SetProps(MakeElement("Label", BindConfig.Name, 13), {
 						Size = UDim2.new(1, -12, 1, 0),
 						Position = UDim2.new(0, 12, 0, 0),
 						Font = Enum.Font.GothamBold,
@@ -1453,8 +1361,8 @@ AddDraggingFunctionality(DragPoint, MainWindow)
 				}), "Second")
 
 				AddConnection(BindBox.Value:GetPropertyChangedSignal("Text"), function()
-					TweenService:Create(BindBox, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-						Size = UDim2.new(0, BindBox.Value.TextBounds.X + 16, 0, 24)
+					TweenService:Create(BindBox, TweenInfo.new(0.2, Enum.EasingStyle.Quint), {
+						Size = UDim2.new(0, BindBox.Value.TextBounds.X + 14, 0, 22)
 					}):Play()
 				end)
 
@@ -1478,14 +1386,10 @@ AddDraggingFunctionality(DragPoint, MainWindow)
 					elseif Bind.Binding then
 						local Key
 						pcall(function()
-							if not CheckKey(BlacklistedKeys, Input.KeyCode) then
-								Key = Input.KeyCode
-							end
+							if not CheckKey(BlacklistedKeys, Input.KeyCode) then Key = Input.KeyCode end
 						end)
 						pcall(function()
-							if CheckKey(WhitelistedMouse, Input.UserInputType) and not Key then
-								Key = Input.UserInputType
-							end
+							if CheckKey(WhitelistedMouse, Input.UserInputType) and not Key then Key = Input.UserInputType end
 						end)
 						Key = Key or Bind.Value
 						Bind:Set(Key)
@@ -1500,23 +1404,6 @@ AddDraggingFunctionality(DragPoint, MainWindow)
 							BindConfig.Callback(Holding)
 						end
 					end
-				end)
-
-				local function GetSecond()
-					return OrionLib.Themes[OrionLib.SelectedTheme].Second
-				end
-
-				AddConnection(Click.MouseEnter, function()
-					local S = GetSecond()
-					TweenService:Create(BindFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-						BackgroundColor3 = Color3.fromRGB(S.R * 255 + 4, S.G * 255 + 4, S.B * 255 + 4)
-					}):Play()
-				end)
-
-				AddConnection(Click.MouseLeave, function()
-					TweenService:Create(BindFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-						BackgroundColor3 = GetSecond()
-					}):Play()
 				end)
 
 				function Bind:Set(Key)
@@ -1540,24 +1427,22 @@ AddDraggingFunctionality(DragPoint, MainWindow)
 				TextboxConfig.TextDisappear = TextboxConfig.TextDisappear or false
 				TextboxConfig.Callback = TextboxConfig.Callback or function() end
 
-				local Click = SetProps(MakeElement("Button"), {
-					Size = UDim2.new(1, 0, 1, 0)
-				})
+				local Click = SetProps(MakeElement("Button"), {Size = UDim2.new(1, 0, 1, 0)})
 
 				local TextboxActual = AddThemeObject(Create("TextBox", {
 					Size = UDim2.new(1, 0, 1, 0),
 					BackgroundTransparency = 1,
 					TextColor3 = Color3.fromRGB(255, 255, 255),
-					PlaceholderColor3 = Color3.fromRGB(180, 180, 190),
+					PlaceholderColor3 = Color3.fromRGB(160, 160, 175),
 					PlaceholderText = "Input",
-					Font = Enum.Font.GothamSemibold,
+					Font = Enum.Font.Gotham,
 					TextXAlignment = Enum.TextXAlignment.Center,
-					TextSize = 14,
+					TextSize = 13,
 					ClearTextOnFocus = false
 				}), "Text")
 
 				local TextContainer = AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(255, 255, 255), 0, 4), {
-					Size = UDim2.new(0, 24, 0, 24),
+					Size = UDim2.new(0, 22, 0, 22),
 					Position = UDim2.new(1, -12, 0.5, 0),
 					AnchorPoint = Vector2.new(1, 0.5)
 				}), {
@@ -1565,11 +1450,11 @@ AddDraggingFunctionality(DragPoint, MainWindow)
 					TextboxActual
 				}), "Main")
 
-				local TextboxFrame = AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(255, 255, 255), 0, 5), {
-					Size = UDim2.new(1, 0, 0, 38),
+				local TextboxFrame = AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(255, 255, 255), 0, 6), {
+					Size = UDim2.new(1, 0, 0, 36),
 					Parent = ItemParent
 				}), {
-					AddThemeObject(SetProps(MakeElement("Label", TextboxConfig.Name, 15), {
+					AddThemeObject(SetProps(MakeElement("Label", TextboxConfig.Name, 13), {
 						Size = UDim2.new(1, -12, 1, 0),
 						Position = UDim2.new(0, 12, 0, 0),
 						Font = Enum.Font.GothamBold,
@@ -1581,8 +1466,8 @@ AddDraggingFunctionality(DragPoint, MainWindow)
 				}), "Second")
 
 				AddConnection(TextboxActual:GetPropertyChangedSignal("Text"), function()
-					TweenService:Create(TextContainer, TweenInfo.new(0.4, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-						Size = UDim2.new(0, TextboxActual.TextBounds.X + 16, 0, 24)
+					TweenService:Create(TextContainer, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {
+						Size = UDim2.new(0, TextboxActual.TextBounds.X + 14, 0, 22)
 					}):Play()
 				end)
 
@@ -1594,23 +1479,6 @@ AddDraggingFunctionality(DragPoint, MainWindow)
 				end)
 
 				TextboxActual.Text = TextboxConfig.Default
-
-				local function GetSecond()
-					return OrionLib.Themes[OrionLib.SelectedTheme].Second
-				end
-
-				AddConnection(Click.MouseEnter, function()
-					local S = GetSecond()
-					TweenService:Create(TextboxFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-						BackgroundColor3 = Color3.fromRGB(S.R * 255 + 4, S.G * 255 + 4, S.B * 255 + 4)
-					}):Play()
-				end)
-
-				AddConnection(Click.MouseLeave, function()
-					TweenService:Create(TextboxFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-						BackgroundColor3 = GetSecond()
-					}):Play()
-				end)
 
 				AddConnection(Click.MouseButton1Up, function()
 					TextboxActual:CaptureFocus()
@@ -1630,7 +1498,7 @@ AddDraggingFunctionality(DragPoint, MainWindow)
 				local ColorInput, HueInput
 
 				local ColorSelection = Create("ImageLabel", {
-					Size = UDim2.new(0, 18, 0, 18),
+					Size = UDim2.new(0, 16, 0, 16),
 					Position = UDim2.new(select(3, Color3.toHSV(Colorpicker.Value))),
 					ScaleType = Enum.ScaleType.Fit,
 					AnchorPoint = Vector2.new(0.5, 0.5),
@@ -1639,7 +1507,7 @@ AddDraggingFunctionality(DragPoint, MainWindow)
 				})
 
 				local HueSelection = Create("ImageLabel", {
-					Size = UDim2.new(0, 18, 0, 18),
+					Size = UDim2.new(0, 16, 0, 16),
 					Position = UDim2.new(0.5, 0, 1 - select(1, Color3.toHSV(Colorpicker.Value))),
 					ScaleType = Enum.ScaleType.Fit,
 					AnchorPoint = Vector2.new(0.5, 0.5),
@@ -1648,7 +1516,7 @@ AddDraggingFunctionality(DragPoint, MainWindow)
 				})
 
 				local Color = Create("ImageLabel", {
-					Size = UDim2.new(1, -25, 1, 0),
+					Size = UDim2.new(1, -22, 1, 0),
 					Visible = false,
 					Image = "rbxassetid://4155801252"
 				}, {
@@ -1657,8 +1525,8 @@ AddDraggingFunctionality(DragPoint, MainWindow)
 				})
 
 				local Hue = Create("Frame", {
-					Size = UDim2.new(0, 20, 1, 0),
-					Position = UDim2.new(1, -20, 0, 0),
+					Size = UDim2.new(0, 18, 1, 0),
+					Position = UDim2.new(1, -18, 0, 0),
 					Visible = false
 				}, {
 					Create("UIGradient", {
@@ -1686,31 +1554,29 @@ AddDraggingFunctionality(DragPoint, MainWindow)
 					Hue,
 					Color,
 					Create("UIPadding", {
-						PaddingLeft = UDim.new(0, 35),
-						PaddingRight = UDim.new(0, 35),
-						PaddingBottom = UDim.new(0, 10),
-						PaddingTop = UDim.new(0, 17)
+						PaddingLeft = UDim.new(0, 30),
+						PaddingRight = UDim.new(0, 30),
+						PaddingBottom = UDim.new(0, 8),
+						PaddingTop = UDim.new(0, 14)
 					})
 				})
 
-				local Click = SetProps(MakeElement("Button"), {
-					Size = UDim2.new(1, 0, 1, 0)
-				})
+				local Click = SetProps(MakeElement("Button"), {Size = UDim2.new(1, 0, 1, 0)})
 
 				local ColorpickerBox = AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(255, 255, 255), 0, 4), {
-					Size = UDim2.new(0, 24, 0, 24),
+					Size = UDim2.new(0, 22, 0, 22),
 					Position = UDim2.new(1, -12, 0.5, 0),
 					AnchorPoint = Vector2.new(1, 0.5)
 				}), {
 					AddThemeObject(MakeElement("Stroke"), "Stroke")
 				}), "Main")
 
-				local ColorpickerFrame = AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(255, 255, 255), 0, 5), {
-					Size = UDim2.new(1, 0, 0, 38),
+				local ColorpickerFrame = AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(255, 255, 255), 0, 6), {
+					Size = UDim2.new(1, 0, 0, 36),
 					Parent = ItemParent
 				}), {
 					SetProps(SetChildren(MakeElement("TFrame"), {
-						AddThemeObject(SetProps(MakeElement("Label", ColorpickerConfig.Name, 15), {
+						AddThemeObject(SetProps(MakeElement("Label", ColorpickerConfig.Name, 13), {
 							Size = UDim2.new(1, -12, 1, 0),
 							Position = UDim2.new(0, 12, 0, 0),
 							Font = Enum.Font.GothamBold,
@@ -1725,7 +1591,7 @@ AddDraggingFunctionality(DragPoint, MainWindow)
 							Visible = false
 						}), "Stroke")
 					}), {
-						Size = UDim2.new(1, 0, 0, 38),
+						Size = UDim2.new(1, 0, 0, 36),
 						ClipsDescendants = true,
 						Name = "F"
 					}),
@@ -1735,8 +1601,8 @@ AddDraggingFunctionality(DragPoint, MainWindow)
 
 				AddConnection(Click.MouseButton1Click, function()
 					Colorpicker.Toggled = not Colorpicker.Toggled
-					TweenService:Create(ColorpickerFrame, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-						Size = Colorpicker.Toggled and UDim2.new(1, 0, 0, 148) or UDim2.new(1, 0, 0, 38)
+					TweenService:Create(ColorpickerFrame, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {
+						Size = Colorpicker.Toggled and UDim2.new(1, 0, 0, 140) or UDim2.new(1, 0, 0, 36)
 					}):Play()
 					Color.Visible = Colorpicker.Toggled
 					Hue.Visible = Colorpicker.Toggled
@@ -1753,9 +1619,7 @@ AddDraggingFunctionality(DragPoint, MainWindow)
 
 				AddConnection(Color.InputBegan, function(input)
 					if input.UserInputType == Enum.UserInputType.MouseButton1 then
-						if ColorInput then
-							ColorInput:Disconnect()
-						end
+						if ColorInput then ColorInput:Disconnect() end
 						ColorInput = AddConnection(RunService.RenderStepped, function()
 							local ColorX = math.clamp(Mouse.X - Color.AbsolutePosition.X, 0, Color.AbsoluteSize.X) / Color.AbsoluteSize.X
 							local ColorY = math.clamp(Mouse.Y - Color.AbsolutePosition.Y, 0, Color.AbsoluteSize.Y) / Color.AbsoluteSize.Y
@@ -1768,19 +1632,15 @@ AddDraggingFunctionality(DragPoint, MainWindow)
 				end)
 
 				AddConnection(Color.InputEnded, function(input)
-					if input.UserInputType == Enum.UserInputType.MouseButton1 then
-						if ColorInput then
-							ColorInput:Disconnect()
-							ColorInput = nil
-						end
+					if input.UserInputType == Enum.UserInputType.MouseButton1 and ColorInput then
+						ColorInput:Disconnect()
+						ColorInput = nil
 					end
 				end)
 
 				AddConnection(Hue.InputBegan, function(input)
 					if input.UserInputType == Enum.UserInputType.MouseButton1 then
-						if HueInput then
-							HueInput:Disconnect()
-						end
+						if HueInput then HueInput:Disconnect() end
 						HueInput = AddConnection(RunService.RenderStepped, function()
 							local HueY = math.clamp(Mouse.Y - Hue.AbsolutePosition.Y, 0, Hue.AbsoluteSize.Y) / Hue.AbsoluteSize.Y
 							HueSelection.Position = UDim2.new(0.5, 0, HueY, 0)
@@ -1791,11 +1651,9 @@ AddDraggingFunctionality(DragPoint, MainWindow)
 				end)
 
 				AddConnection(Hue.InputEnded, function(input)
-					if input.UserInputType == Enum.UserInputType.MouseButton1 then
-						if HueInput then
-							HueInput:Disconnect()
-							HueInput = nil
-						end
+					if input.UserInputType == Enum.UserInputType.MouseButton1 and HueInput then
+						HueInput:Disconnect()
+						HueInput = nil
 					end
 				end)
 
@@ -1822,18 +1680,18 @@ AddDraggingFunctionality(DragPoint, MainWindow)
 			SectionConfig.Name = SectionConfig.Name or "Section"
 
 			local SectionFrame = SetChildren(SetProps(MakeElement("TFrame"), {
-				Size = UDim2.new(1, 0, 0, 26),
+				Size = UDim2.new(1, 0, 0, 24),
 				Parent = Container
 			}), {
-				AddThemeObject(SetProps(MakeElement("Label", SectionConfig.Name, 14), {
-					Size = UDim2.new(1, -12, 0, 16),
-					Position = UDim2.new(0, 0, 0, 3),
+				AddThemeObject(SetProps(MakeElement("Label", SectionConfig.Name, 12), {
+					Size = UDim2.new(1, -12, 0, 14),
+					Position = UDim2.new(0, 0, 0, 2),
 					Font = Enum.Font.GothamSemibold
 				}), "TextDark"),
 				SetChildren(SetProps(MakeElement("TFrame"), {
 					AnchorPoint = Vector2.new(0, 0),
-					Size = UDim2.new(1, 0, 1, -24),
-					Position = UDim2.new(0, 0, 0, 23),
+					Size = UDim2.new(1, 0, 1, -22),
+					Position = UDim2.new(0, 0, 0, 20),
 					Name = "Holder"
 				}), {
 					MakeElement("List", 0, 6)
@@ -1841,7 +1699,7 @@ AddDraggingFunctionality(DragPoint, MainWindow)
 			})
 
 			AddConnection(SectionFrame.Holder.UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"), function()
-				SectionFrame.Size = UDim2.new(1, 0, 0, SectionFrame.Holder.UIListLayout.AbsoluteContentSize.Y + 31)
+				SectionFrame.Size = UDim2.new(1, 0, 0, SectionFrame.Holder.UIListLayout.AbsoluteContentSize.Y + 28)
 				SectionFrame.Holder.Size = UDim2.new(1, 0, 0, SectionFrame.Holder.UIListLayout.AbsoluteContentSize.Y)
 			end)
 
@@ -1857,7 +1715,7 @@ AddDraggingFunctionality(DragPoint, MainWindow)
 		end
 
 		if TabConfig.PremiumOnly then
-			for i, v in next, ElementFunction do
+			for i in next, ElementFunction do
 				ElementFunction[i] = function() end
 			end
 			Container:FindFirstChild("UIListLayout"):Destroy()
@@ -1866,33 +1724,15 @@ AddDraggingFunctionality(DragPoint, MainWindow)
 				Size = UDim2.new(1, 0, 1, 0),
 				Parent = Container
 			}), {
-				AddThemeObject(SetProps(MakeElement("Image", "rbxassetid://3610239960"), {
-					Size = UDim2.new(0, 18, 0, 18),
-					Position = UDim2.new(0, 15, 0, 15),
-					ImageTransparency = 0.4
-				}), "Text"),
-				AddThemeObject(SetProps(MakeElement("Label", "Unauthorised Access", 14), {
-					Size = UDim2.new(1, -38, 0, 14),
-					Position = UDim2.new(0, 38, 0, 18),
-					TextTransparency = 0.4
-				}), "Text"),
-				AddThemeObject(SetProps(MakeElement("Image", "rbxassetid://4483345875"), {
-					Size = UDim2.new(0, 56, 0, 56),
-					Position = UDim2.new(0, 84, 0, 110)
-				}), "Text"),
-				AddThemeObject(SetProps(MakeElement("Label", "Premium Features", 14), {
-					Size = UDim2.new(1, -150, 0, 14),
-					Position = UDim2.new(0, 150, 0, 112),
+				AddThemeObject(SetProps(MakeElement("Label", "Premium Only", 14), {
+					Size = UDim2.new(1, 0, 0, 20),
+					Position = UDim2.new(0, 0, 0.4, 0),
+					TextXAlignment = Enum.TextXAlignment.Center,
 					Font = Enum.Font.GothamBold
-				}), "Text"),
-				AddThemeObject(SetProps(MakeElement("Label", "This part of the script is locked to Sirius Premium users. Purchase Premium in the Discord server (sirius.menu/discord)", 12), {
-					Size = UDim2.new(1, -200, 0, 14),
-					Position = UDim2.new(0, 150, 0, 138),
-					TextWrapped = true,
-					TextTransparency = 0.4
 				}), "Text")
 			})
 		end
+
 		return ElementFunction
 	end
 
